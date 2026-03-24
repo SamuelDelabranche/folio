@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:folio/features/library/library_page.dart';
 import 'app/theme.dart';
 
 void main() {
@@ -15,6 +16,7 @@ class MyApp extends StatelessWidget {
       theme: AppTheme.light,
       darkTheme: AppTheme.dark,
       themeMode: ThemeMode.system,
+      home: LibraryPage(),
     );
   }
 }
