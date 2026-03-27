@@ -1,22 +1,22 @@
 
 
 import 'package:flutter/material.dart';
-import 'package:folio/domain/models/manga.dart';
+import 'package:folio/data/database/app_database.dart';
 
 class MangaDetailPage extends StatelessWidget{
-  final Manga manga;
+  final MangaTableData mangaData;
 
-  const MangaDetailPage({super.key, required this.manga});
+  const MangaDetailPage({super.key, required this.mangaData});
   
   @override
   Widget build(BuildContext context) {
       return Scaffold(
         appBar: AppBar(
-          title: Text(manga.titre),
+          title: Text(mangaData.titre),
         ),
 
         body: Center(
-          child: Text(manga.titre),
+          child: Text(mangaData.titre),
         ),
       );
   }

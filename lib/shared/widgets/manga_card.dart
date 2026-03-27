@@ -1,10 +1,10 @@
 import 'package:flutter/material.dart';
-import 'package:folio/domain/models/manga.dart';
+import 'package:folio/data/database/app_database.dart';
 
 class MangaCard extends StatelessWidget{
-  final Manga manga;
+  final MangaTableData mangaData;
   
-  const MangaCard({super.key, required this.manga});
+  const MangaCard({super.key, required this.mangaData});
 
   @override
   Widget build(BuildContext context) {
@@ -24,8 +24,8 @@ class MangaCard extends StatelessWidget{
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(manga.titre, style: const TextStyle(fontWeight: FontWeight.bold)),
-                Text("${manga.chapitres} ch. · ⭐ ${manga.note}"),
+                Text(mangaData.titre, style: const TextStyle(fontWeight: FontWeight.bold)),
+                Text("${mangaData.chapitres} ch. · ⭐ ${mangaData.note}"),
               ],
             ),
           ),
