@@ -7,6 +7,7 @@ class MangaTable extends Table{
   TextColumn get description => text().nullable()();
   TextColumn get imagePath => text().nullable()();
   TextColumn get status => text()();
+  TextColumn get genre => text().nullable()();
   TextColumn get typeManga => text()();
 
   BoolColumn get estFavori => boolean()();

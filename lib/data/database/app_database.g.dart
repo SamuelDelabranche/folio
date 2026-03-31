@@ -62,6 +62,15 @@ class $MangaTableTable extends MangaTable
     type: DriftSqlType.string,
     requiredDuringInsert: true,
   );
+  static const VerificationMeta _genreMeta = const VerificationMeta('genre');
+  @override
+  late final GeneratedColumn<String> genre = GeneratedColumn<String>(
+    'genre',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
   static const VerificationMeta _typeMangaMeta = const VerificationMeta(
     'typeManga',
   );
@@ -114,6 +123,7 @@ class $MangaTableTable extends MangaTable
     description,
     imagePath,
     status,
+    genre,
     typeManga,
     estFavori,
     note,
@@ -164,6 +174,12 @@ class $MangaTableTable extends MangaTable
       );
     } else if (isInserting) {
       context.missing(_statusMeta);
+    }
+    if (data.containsKey('genre')) {
+      context.handle(
+        _genreMeta,
+        genre.isAcceptableOrUnknown(data['genre']!, _genreMeta),
+      );
     }
     if (data.containsKey('type_manga')) {
       context.handle(
@@ -226,6 +242,10 @@ class $MangaTableTable extends MangaTable
         DriftSqlType.string,
         data['${effectivePrefix}status'],
       )!,
+      genre: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}genre'],
+      ),
       typeManga: attachedDatabase.typeMapping.read(
         DriftSqlType.string,
         data['${effectivePrefix}type_manga'],
@@ -257,6 +277,7 @@ class MangaTableData extends DataClass implements Insertable<MangaTableData> {
   final String? description;
   final String? imagePath;
   final String status;
+  final String? genre;
   final String typeManga;
   final bool estFavori;
   final double note;
@@ -267,6 +288,7 @@ class MangaTableData extends DataClass implements Insertable<MangaTableData> {
     this.description,
     this.imagePath,
     required this.status,
+    this.genre,
     required this.typeManga,
     required this.estFavori,
     required this.note,
@@ -284,6 +306,9 @@ class MangaTableData extends DataClass implements Insertable<MangaTableData> {
       map['image_path'] = Variable<String>(imagePath);
     }
     map['status'] = Variable<String>(status);
+    if (!nullToAbsent || genre != null) {
+      map['genre'] = Variable<String>(genre);
+    }
     map['type_manga'] = Variable<String>(typeManga);
     map['est_favori'] = Variable<bool>(estFavori);
     map['note'] = Variable<double>(note);
@@ -302,6 +327,9 @@ class MangaTableData extends DataClass implements Insertable<MangaTableData> {
           ? const Value.absent()
           : Value(imagePath),
       status: Value(status),
+      genre: genre == null && nullToAbsent
+          ? const Value.absent()
+          : Value(genre),
       typeManga: Value(typeManga),
       estFavori: Value(estFavori),
       note: Value(note),
@@ -320,6 +348,7 @@ class MangaTableData extends DataClass implements Insertable<MangaTableData> {
       description: serializer.fromJson<String?>(json['description']),
       imagePath: serializer.fromJson<String?>(json['imagePath']),
       status: serializer.fromJson<String>(json['status']),
+      genre: serializer.fromJson<String?>(json['genre']),
       typeManga: serializer.fromJson<String>(json['typeManga']),
       estFavori: serializer.fromJson<bool>(json['estFavori']),
       note: serializer.fromJson<double>(json['note']),
@@ -335,6 +364,7 @@ class MangaTableData extends DataClass implements Insertable<MangaTableData> {
       'description': serializer.toJson<String?>(description),
       'imagePath': serializer.toJson<String?>(imagePath),
       'status': serializer.toJson<String>(status),
+      'genre': serializer.toJson<String?>(genre),
       'typeManga': serializer.toJson<String>(typeManga),
       'estFavori': serializer.toJson<bool>(estFavori),
       'note': serializer.toJson<double>(note),
@@ -348,6 +378,7 @@ class MangaTableData extends DataClass implements Insertable<MangaTableData> {
     Value<String?> description = const Value.absent(),
     Value<String?> imagePath = const Value.absent(),
     String? status,
+    Value<String?> genre = const Value.absent(),
     String? typeManga,
     bool? estFavori,
     double? note,
@@ -358,6 +389,7 @@ class MangaTableData extends DataClass implements Insertable<MangaTableData> {
     description: description.present ? description.value : this.description,
     imagePath: imagePath.present ? imagePath.value : this.imagePath,
     status: status ?? this.status,
+    genre: genre.present ? genre.value : this.genre,
     typeManga: typeManga ?? this.typeManga,
     estFavori: estFavori ?? this.estFavori,
     note: note ?? this.note,
@@ -372,6 +404,7 @@ class MangaTableData extends DataClass implements Insertable<MangaTableData> {
           : this.description,
       imagePath: data.imagePath.present ? data.imagePath.value : this.imagePath,
       status: data.status.present ? data.status.value : this.status,
+      genre: data.genre.present ? data.genre.value : this.genre,
       typeManga: data.typeManga.present ? data.typeManga.value : this.typeManga,
       estFavori: data.estFavori.present ? data.estFavori.value : this.estFavori,
       note: data.note.present ? data.note.value : this.note,
@@ -387,6 +420,7 @@ class MangaTableData extends DataClass implements Insertable<MangaTableData> {
           ..write('description: $description, ')
           ..write('imagePath: $imagePath, ')
           ..write('status: $status, ')
+          ..write('genre: $genre, ')
           ..write('typeManga: $typeManga, ')
           ..write('estFavori: $estFavori, ')
           ..write('note: $note, ')
@@ -402,6 +436,7 @@ class MangaTableData extends DataClass implements Insertable<MangaTableData> {
     description,
     imagePath,
     status,
+    genre,
     typeManga,
     estFavori,
     note,
@@ -416,6 +451,7 @@ class MangaTableData extends DataClass implements Insertable<MangaTableData> {
           other.description == this.description &&
           other.imagePath == this.imagePath &&
           other.status == this.status &&
+          other.genre == this.genre &&
           other.typeManga == this.typeManga &&
           other.estFavori == this.estFavori &&
           other.note == this.note &&
@@ -428,6 +464,7 @@ class MangaTableCompanion extends UpdateCompanion<MangaTableData> {
   final Value<String?> description;
   final Value<String?> imagePath;
   final Value<String> status;
+  final Value<String?> genre;
   final Value<String> typeManga;
   final Value<bool> estFavori;
   final Value<double> note;
@@ -438,6 +475,7 @@ class MangaTableCompanion extends UpdateCompanion<MangaTableData> {
     this.description = const Value.absent(),
     this.imagePath = const Value.absent(),
     this.status = const Value.absent(),
+    this.genre = const Value.absent(),
     this.typeManga = const Value.absent(),
     this.estFavori = const Value.absent(),
     this.note = const Value.absent(),
@@ -449,6 +487,7 @@ class MangaTableCompanion extends UpdateCompanion<MangaTableData> {
     this.description = const Value.absent(),
     this.imagePath = const Value.absent(),
     required String status,
+    this.genre = const Value.absent(),
     required String typeManga,
     required bool estFavori,
     required double note,
@@ -465,6 +504,7 @@ class MangaTableCompanion extends UpdateCompanion<MangaTableData> {
     Expression<String>? description,
     Expression<String>? imagePath,
     Expression<String>? status,
+    Expression<String>? genre,
     Expression<String>? typeManga,
     Expression<bool>? estFavori,
     Expression<double>? note,
@@ -476,6 +516,7 @@ class MangaTableCompanion extends UpdateCompanion<MangaTableData> {
       if (description != null) 'description': description,
       if (imagePath != null) 'image_path': imagePath,
       if (status != null) 'status': status,
+      if (genre != null) 'genre': genre,
       if (typeManga != null) 'type_manga': typeManga,
       if (estFavori != null) 'est_favori': estFavori,
       if (note != null) 'note': note,
@@ -489,6 +530,7 @@ class MangaTableCompanion extends UpdateCompanion<MangaTableData> {
     Value<String?>? description,
     Value<String?>? imagePath,
     Value<String>? status,
+    Value<String?>? genre,
     Value<String>? typeManga,
     Value<bool>? estFavori,
     Value<double>? note,
@@ -500,6 +542,7 @@ class MangaTableCompanion extends UpdateCompanion<MangaTableData> {
       description: description ?? this.description,
       imagePath: imagePath ?? this.imagePath,
       status: status ?? this.status,
+      genre: genre ?? this.genre,
       typeManga: typeManga ?? this.typeManga,
       estFavori: estFavori ?? this.estFavori,
       note: note ?? this.note,
@@ -525,6 +568,9 @@ class MangaTableCompanion extends UpdateCompanion<MangaTableData> {
     if (status.present) {
       map['status'] = Variable<String>(status.value);
     }
+    if (genre.present) {
+      map['genre'] = Variable<String>(genre.value);
+    }
     if (typeManga.present) {
       map['type_manga'] = Variable<String>(typeManga.value);
     }
@@ -548,6 +594,7 @@ class MangaTableCompanion extends UpdateCompanion<MangaTableData> {
           ..write('description: $description, ')
           ..write('imagePath: $imagePath, ')
           ..write('status: $status, ')
+          ..write('genre: $genre, ')
           ..write('typeManga: $typeManga, ')
           ..write('estFavori: $estFavori, ')
           ..write('note: $note, ')
@@ -576,6 +623,7 @@ typedef $$MangaTableTableCreateCompanionBuilder =
       Value<String?> description,
       Value<String?> imagePath,
       required String status,
+      Value<String?> genre,
       required String typeManga,
       required bool estFavori,
       required double note,
@@ -588,6 +636,7 @@ typedef $$MangaTableTableUpdateCompanionBuilder =
       Value<String?> description,
       Value<String?> imagePath,
       Value<String> status,
+      Value<String?> genre,
       Value<String> typeManga,
       Value<bool> estFavori,
       Value<double> note,
@@ -625,6 +674,11 @@ class $$MangaTableTableFilterComposer
 
   ColumnFilters<String> get status => $composableBuilder(
     column: $table.status,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get genre => $composableBuilder(
+    column: $table.genre,
     builder: (column) => ColumnFilters(column),
   );
 
@@ -683,6 +737,11 @@ class $$MangaTableTableOrderingComposer
     builder: (column) => ColumnOrderings(column),
   );
 
+  ColumnOrderings<String> get genre => $composableBuilder(
+    column: $table.genre,
+    builder: (column) => ColumnOrderings(column),
+  );
+
   ColumnOrderings<String> get typeManga => $composableBuilder(
     column: $table.typeManga,
     builder: (column) => ColumnOrderings(column),
@@ -729,6 +788,9 @@ class $$MangaTableTableAnnotationComposer
 
   GeneratedColumn<String> get status =>
       $composableBuilder(column: $table.status, builder: (column) => column);
+
+  GeneratedColumn<String> get genre =>
+      $composableBuilder(column: $table.genre, builder: (column) => column);
 
   GeneratedColumn<String> get typeManga =>
       $composableBuilder(column: $table.typeManga, builder: (column) => column);
@@ -779,6 +841,7 @@ class $$MangaTableTableTableManager
                 Value<String?> description = const Value.absent(),
                 Value<String?> imagePath = const Value.absent(),
                 Value<String> status = const Value.absent(),
+                Value<String?> genre = const Value.absent(),
                 Value<String> typeManga = const Value.absent(),
                 Value<bool> estFavori = const Value.absent(),
                 Value<double> note = const Value.absent(),
@@ -789,6 +852,7 @@ class $$MangaTableTableTableManager
                 description: description,
                 imagePath: imagePath,
                 status: status,
+                genre: genre,
                 typeManga: typeManga,
                 estFavori: estFavori,
                 note: note,
@@ -801,6 +865,7 @@ class $$MangaTableTableTableManager
                 Value<String?> description = const Value.absent(),
                 Value<String?> imagePath = const Value.absent(),
                 required String status,
+                Value<String?> genre = const Value.absent(),
                 required String typeManga,
                 required bool estFavori,
                 required double note,
@@ -811,6 +876,7 @@ class $$MangaTableTableTableManager
                 description: description,
                 imagePath: imagePath,
                 status: status,
+                genre: genre,
                 typeManga: typeManga,
                 estFavori: estFavori,
                 note: note,

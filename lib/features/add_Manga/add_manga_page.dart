@@ -4,6 +4,42 @@ import 'package:folio/app/providers.dart';
 import 'package:folio/data/database/app_database.dart';
 import 'package:drift/drift.dart' hide Column;
 
+const List<String> tousLesGenres = [
+  'Action',
+  'Aventure',
+  'Arts martiaux',
+  'Sports',
+  'Romance',
+  'Comédie',
+  'Drame',
+  'Tranche de vie',
+  'Mystère',
+  'Thriller',
+  'Horreur',
+  'Psychologique',
+  'Fantaisie',
+  'Science-fiction',
+  'Isekai',
+  'Surnaturel',
+  'Mecha',
+  'Magie',
+  'Historique',
+  'Musique',
+  'Cuisine',
+  'Jeux',
+  'Ecchi',
+  'Harem',
+  'Shonen',
+  'Shojo',
+  'Seinen',
+  'Josei',
+  'Kodomomuke',
+  'Yaoi',
+  'Yuri',
+  'Gore',
+  'Militaire',
+  'Politique',
+];
 
 class AddMangaPage extends ConsumerStatefulWidget {
   const AddMangaPage({super.key});
@@ -17,8 +53,11 @@ class _AddMangaPageState extends ConsumerState<AddMangaPage> {
   final _titreController = TextEditingController();
   final _chapitreController = TextEditingController();
   final _noteController = TextEditingController();
+  final _rechercheController = TextEditingController();
+  String _rechercheGenre = '';
   String _statusSelectionne = 'En cours';
   String _typeSelectionne = 'Manga';
+  List<String> _genreSelectionne = [];
   bool _estFavori = false;
 
   @override
@@ -28,7 +67,7 @@ class _AddMangaPageState extends ConsumerState<AddMangaPage> {
       body: Form(
         key: _formKey,
         child: SingleChildScrollView(
-            child: Column(
+          child: Column(
             children: [
               TextFormField(
                 controller: _titreController,
@@ -77,8 +116,8 @@ class _AddMangaPageState extends ConsumerState<AddMangaPage> {
                 initialValue: _statusSelectionne,
                 decoration: InputDecoration(labelText: 'Statut'),
                 items: ['À lire', 'En cours', 'Terminé', 'Abandonné']
-                  .map((s) => DropdownMenuItem(value: s, child: Text(s)))
-                  .toList(),
+                    .map((s) => DropdownMenuItem(value: s, child: Text(s)))
+                    .toList(),
                 onChanged: (value) {
                   setState(() {
                     _statusSelectionne = value!;
@@ -89,40 +128,79 @@ class _AddMangaPageState extends ConsumerState<AddMangaPage> {
                 initialValue: _typeSelectionne,
                 decoration: InputDecoration(labelText: 'Type'),
                 items: ['Manga', 'Manhwa', 'Manhua', 'Novel']
-                  .map((s) => DropdownMenuItem(value: s, child: Text(s)))
-                  .toList(),
+                    .map((s) => DropdownMenuItem(value: s, child: Text(s)))
+                    .toList(),
                 onChanged: (value) {
                   setState(() {
                     _typeSelectionne = value!;
                   });
                 },
               ),
+              TextField(
+                controller: _rechercheController,
+                decoration: InputDecoration(
+                  labelText: "Rechercher un genre",
+                  prefixIcon: Icon(Icons.search),
+                ),
+                onChanged: (value) {
+                  setState(() {
+                    _rechercheGenre = value.toLowerCase();
+                  });
+                },
+              ),
+              Wrap(
+                spacing: 8,
+                children: tousLesGenres.where((g) => g.toLowerCase().contains(_rechercheGenre))
+                    .map(
+                      (genre) => FilterChip(
+                        label: Text(genre),
+                        selected: _genreSelectionne.contains(genre),
+                        onSelected: (selected) {
+                          setState(() {
+                            selected
+                                ? _genreSelectionne.add(genre)
+                                : _genreSelectionne.remove(genre);
+                          });
+                        },
+                      ),
+                    )
+                    .toList(),
+              ),
+
               SwitchListTile(
                 title: Text("Favori"),
-                value: _estFavori, 
-                onChanged:(value) => setState(() {
+                value: _estFavori,
+                onChanged: (value) => setState(() {
                   _estFavori = value;
                 }),
               ),
-              ElevatedButton(onPressed: () {
-                if (_formKey.currentState!.validate()) {
-                  final dao = ref.read(mangaDaoProvider);
-                  dao.insertManga(MangaTableCompanion(
-                    id: Value.absent(),
-                    titre: Value(_titreController.text),
-                    description: Value.absent(),
-                    imagePath: Value.absent(),
-                    status: Value(_statusSelectionne),
-                    typeManga: Value(_typeSelectionne),
-                    estFavori: Value(_estFavori),
-                    note: Value(double.parse(_noteController.text)),
-                    chapitres: Value(double.parse(_chapitreController.text)),
-                  ));
+              ElevatedButton(
+                onPressed: () {
+                  if (_formKey.currentState!.validate()) {
+                    final dao = ref.read(mangaDaoProvider);
+                    dao.insertManga(
+                      MangaTableCompanion(
+                        id: Value.absent(),
+                        titre: Value(_titreController.text),
+                        description: Value.absent(),
+                        imagePath: Value.absent(),
+                        status: Value(_statusSelectionne),
+                        typeManga: Value(_typeSelectionne),
+                        estFavori: Value(_estFavori),
+                        note: Value(double.parse(_noteController.text)),
+                        chapitres: Value(
+                          double.parse(_chapitreController.text),
+                        ),
+                        genre: Value(_genreSelectionne.join(',')),
+                      ),
+                    );
 
-                  Navigator.pop(context);
-                  ref.invalidate(mangasProvider);
-                }
-              }, child: Text("Ajouter"))
+                    Navigator.pop(context);
+                    ref.invalidate(mangasProvider);
+                  }
+                },
+                child: Text("Ajouter"),
+              ),
             ],
           ),
         ),
@@ -135,6 +213,7 @@ class _AddMangaPageState extends ConsumerState<AddMangaPage> {
     _titreController.dispose();
     _chapitreController.dispose();
     _noteController.dispose();
+    _rechercheController.dispose();
     super.dispose();
   }
 }
