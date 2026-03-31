@@ -17,78 +17,114 @@ class _AddMangaPageState extends ConsumerState<AddMangaPage> {
   final _titreController = TextEditingController();
   final _chapitreController = TextEditingController();
   final _noteController = TextEditingController();
+  String _statusSelectionne = 'En cours';
+  String _typeSelectionne = 'Manga';
+  bool _estFavori = false;
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(title: Text("Ajouter votre manga")),
       body: Form(
         key: _formKey,
-        child: Column(
-          children: [
-            TextFormField(
-              controller: _titreController,
-              decoration: InputDecoration(labelText: 'Nom du manga'),
-              validator: (value) {
-                if (value == null || value.isEmpty) {
-                  return 'Champ requis';
-                } else {
-                  return null;
-                }
-              },
-            ),
-            TextFormField(
-              keyboardType: TextInputType.number,
-              controller: _chapitreController,
-              decoration: InputDecoration(
-                labelText: 'Combien de chapitres lus',
+        child: SingleChildScrollView(
+            child: Column(
+            children: [
+              TextFormField(
+                controller: _titreController,
+                decoration: InputDecoration(labelText: 'Nom du manga'),
+                validator: (value) {
+                  if (value == null || value.isEmpty) {
+                    return 'Champ requis';
+                  } else {
+                    return null;
+                  }
+                },
               ),
-              validator: (value) {
-                if (value == null || value.isEmpty) {
-                  return 'Champ requis';
-                } else {
-                  return null;
-                }
-              },
-            ),
-            TextFormField(
-              keyboardType: TextInputType.number,
-              controller: _noteController,
-              decoration: InputDecoration(labelText: 'Votre note'),
-              validator: (value) {
-                if (value == null || value.isEmpty) {
-                  return "Champ requis";
-                }
-                final note = double.tryParse(value);
-                if (note == null) {
-                  return "Nombre Invalide";
-                } else if (note < 0 || note > 10) {
-                  return "La note doit être entre 0 et 10";
-                } else {
-                  return null;
-                }
-              },
-            ),
+              TextFormField(
+                keyboardType: TextInputType.number,
+                controller: _chapitreController,
+                decoration: InputDecoration(
+                  labelText: 'Combien de chapitres lus',
+                ),
+                validator: (value) {
+                  if (value == null || value.isEmpty) {
+                    return 'Champ requis';
+                  } else {
+                    return null;
+                  }
+                },
+              ),
+              TextFormField(
+                keyboardType: TextInputType.number,
+                controller: _noteController,
+                decoration: InputDecoration(labelText: 'Votre note'),
+                validator: (value) {
+                  if (value == null || value.isEmpty) {
+                    return "Champ requis";
+                  }
+                  final note = double.tryParse(value);
+                  if (note == null) {
+                    return "Nombre Invalide";
+                  } else if (note < 0 || note > 10) {
+                    return "La note doit être entre 0 et 10";
+                  } else {
+                    return null;
+                  }
+                },
+              ),
+              DropdownButtonFormField<String>(
+                initialValue: _statusSelectionne,
+                decoration: InputDecoration(labelText: 'Statut'),
+                items: ['À lire', 'En cours', 'Terminé', 'Abandonné']
+                  .map((s) => DropdownMenuItem(value: s, child: Text(s)))
+                  .toList(),
+                onChanged: (value) {
+                  setState(() {
+                    _statusSelectionne = value!;
+                  });
+                },
+              ),
+              DropdownButtonFormField(
+                initialValue: _typeSelectionne,
+                decoration: InputDecoration(labelText: 'Type'),
+                items: ['Manga', 'Manhwa', 'Manhua', 'Novel']
+                  .map((s) => DropdownMenuItem(value: s, child: Text(s)))
+                  .toList(),
+                onChanged: (value) {
+                  setState(() {
+                    _typeSelectionne = value!;
+                  });
+                },
+              ),
+              SwitchListTile(
+                title: Text("Favori"),
+                value: _estFavori, 
+                onChanged:(value) => setState(() {
+                  _estFavori = value;
+                }),
+              ),
+              ElevatedButton(onPressed: () {
+                if (_formKey.currentState!.validate()) {
+                  final dao = ref.read(mangaDaoProvider);
+                  dao.insertManga(MangaTableCompanion(
+                    id: Value.absent(),
+                    titre: Value(_titreController.text),
+                    description: Value.absent(),
+                    imagePath: Value.absent(),
+                    status: Value(_statusSelectionne),
+                    typeManga: Value(_typeSelectionne),
+                    estFavori: Value(_estFavori),
+                    note: Value(double.parse(_noteController.text)),
+                    chapitres: Value(double.parse(_chapitreController.text)),
+                  ));
 
-            ElevatedButton(onPressed: () {
-              if (_formKey.currentState!.validate()) {
-                final dao = ref.read(mangaDaoProvider);
-                dao.insertManga(MangaTableCompanion(
-                  id: Value.absent(),
-                  titre: Value(_titreController.text),
-                  description: Value.absent(),
-                  imagePath: Value.absent(),
-                  status: Value("En cours"),
-                  typeManga: Value("Manga"),
-                  estFavori: Value(false),
-                  note: Value(double.parse(_noteController.text)),
-                  chapitres: Value(double.parse(_chapitreController.text)),
-                ));
-
-                Navigator.pop(context);
-                ref.invalidate(mangasProvider);
-              }
-            }, child: Text("Ajouter"))
-          ],
+                  Navigator.pop(context);
+                  ref.invalidate(mangasProvider);
+                }
+              }, child: Text("Ajouter"))
+            ],
+          ),
         ),
       ),
     );
