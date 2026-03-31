@@ -3,43 +3,9 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:folio/app/providers.dart';
 import 'package:folio/data/database/app_database.dart';
 import 'package:drift/drift.dart' hide Column;
+import 'package:folio/app/constants.dart';
 
-const List<String> tousLesGenres = [
-  'Action',
-  'Aventure',
-  'Arts martiaux',
-  'Sports',
-  'Romance',
-  'Comédie',
-  'Drame',
-  'Tranche de vie',
-  'Mystère',
-  'Thriller',
-  'Horreur',
-  'Psychologique',
-  'Fantaisie',
-  'Science-fiction',
-  'Isekai',
-  'Surnaturel',
-  'Mecha',
-  'Magie',
-  'Historique',
-  'Musique',
-  'Cuisine',
-  'Jeux',
-  'Ecchi',
-  'Harem',
-  'Shonen',
-  'Shojo',
-  'Seinen',
-  'Josei',
-  'Kodomomuke',
-  'Yaoi',
-  'Yuri',
-  'Gore',
-  'Militaire',
-  'Politique',
-];
+
 
 class AddMangaPage extends ConsumerStatefulWidget {
   const AddMangaPage({super.key});
