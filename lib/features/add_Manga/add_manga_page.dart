@@ -57,7 +57,7 @@ class _AddMangaPageState extends ConsumerState<AddMangaPage> {
   String _rechercheGenre = '';
   String _statusSelectionne = 'En cours';
   String _typeSelectionne = 'Manga';
-  List<String> _genreSelectionne = [];
+  final List<String> _genreSelectionne = [];
   bool _estFavori = false;
 
   @override
@@ -67,141 +67,191 @@ class _AddMangaPageState extends ConsumerState<AddMangaPage> {
       body: Form(
         key: _formKey,
         child: SingleChildScrollView(
-          child: Column(
-            children: [
-              TextFormField(
-                controller: _titreController,
-                decoration: InputDecoration(labelText: 'Nom du manga'),
-                validator: (value) {
-                  if (value == null || value.isEmpty) {
-                    return 'Champ requis';
-                  } else {
-                    return null;
-                  }
-                },
-              ),
-              TextFormField(
-                keyboardType: TextInputType.number,
-                controller: _chapitreController,
-                decoration: InputDecoration(
-                  labelText: 'Combien de chapitres lus',
+          child: Padding(
+            padding: EdgeInsets.all(16),
+            child: Column(
+              children: [
+                TextFormField(
+                  controller: _titreController,
+                  decoration: InputDecoration(
+                    labelText: 'Nom du manga',
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                  ),
+                  validator: (value) {
+                    if (value == null || value.isEmpty) {
+                      return 'Champ requis';
+                    } else {
+                      return null;
+                    }
+                  },
                 ),
-                validator: (value) {
-                  if (value == null || value.isEmpty) {
-                    return 'Champ requis';
-                  } else {
-                    return null;
-                  }
-                },
-              ),
-              TextFormField(
-                keyboardType: TextInputType.number,
-                controller: _noteController,
-                decoration: InputDecoration(labelText: 'Votre note'),
-                validator: (value) {
-                  if (value == null || value.isEmpty) {
-                    return "Champ requis";
-                  }
-                  final note = double.tryParse(value);
-                  if (note == null) {
-                    return "Nombre Invalide";
-                  } else if (note < 0 || note > 10) {
-                    return "La note doit être entre 0 et 10";
-                  } else {
-                    return null;
-                  }
-                },
-              ),
-              DropdownButtonFormField<String>(
-                initialValue: _statusSelectionne,
-                decoration: InputDecoration(labelText: 'Statut'),
-                items: ['À lire', 'En cours', 'Terminé', 'Abandonné']
-                    .map((s) => DropdownMenuItem(value: s, child: Text(s)))
-                    .toList(),
-                onChanged: (value) {
-                  setState(() {
-                    _statusSelectionne = value!;
-                  });
-                },
-              ),
-              DropdownButtonFormField(
-                initialValue: _typeSelectionne,
-                decoration: InputDecoration(labelText: 'Type'),
-                items: ['Manga', 'Manhwa', 'Manhua', 'Novel']
-                    .map((s) => DropdownMenuItem(value: s, child: Text(s)))
-                    .toList(),
-                onChanged: (value) {
-                  setState(() {
-                    _typeSelectionne = value!;
-                  });
-                },
-              ),
-              TextField(
-                controller: _rechercheController,
-                decoration: InputDecoration(
-                  labelText: "Rechercher un genre",
-                  prefixIcon: Icon(Icons.search),
+                SizedBox(height: 16),
+                TextFormField(
+                  keyboardType: TextInputType.number,
+                  controller: _chapitreController,
+                  decoration: InputDecoration(
+                    labelText: 'Combien de chapitres lus',
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                  ),
+                  validator: (value) {
+                    if (value == null || value.isEmpty) {
+                      return 'Champ requis';
+                    } else {
+                      return null;
+                    }
+                  },
                 ),
-                onChanged: (value) {
-                  setState(() {
-                    _rechercheGenre = value.toLowerCase();
-                  });
-                },
-              ),
-              Wrap(
-                spacing: 8,
-                children: tousLesGenres.where((g) => g.toLowerCase().contains(_rechercheGenre))
-                    .map(
-                      (genre) => FilterChip(
-                        label: Text(genre),
-                        selected: _genreSelectionne.contains(genre),
-                        onSelected: (selected) {
-                          setState(() {
-                            selected
-                                ? _genreSelectionne.add(genre)
-                                : _genreSelectionne.remove(genre);
-                          });
-                        },
-                      ),
-                    )
-                    .toList(),
-              ),
-
-              SwitchListTile(
-                title: Text("Favori"),
-                value: _estFavori,
-                onChanged: (value) => setState(() {
-                  _estFavori = value;
-                }),
-              ),
-              ElevatedButton(
-                onPressed: () {
-                  if (_formKey.currentState!.validate()) {
-                    final dao = ref.read(mangaDaoProvider);
-                    dao.insertManga(
-                      MangaTableCompanion(
-                        id: Value.absent(),
-                        titre: Value(_titreController.text),
-                        description: Value.absent(),
-                        imagePath: Value.absent(),
-                        status: Value(_statusSelectionne),
-                        typeManga: Value(_typeSelectionne),
-                        estFavori: Value(_estFavori),
-                        note: Value(double.parse(_noteController.text)),
-                        chapitres: Value(
-                          double.parse(_chapitreController.text),
+                SizedBox(height: 16),
+                TextFormField(
+                  keyboardType: TextInputType.number,
+                  controller: _noteController,
+                  decoration: InputDecoration(
+                    labelText: 'Votre note',
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                  ),
+                  validator: (value) {
+                    if (value == null || value.isEmpty) {
+                      return "Champ requis";
+                    }
+                    final note = double.tryParse(value);
+                    if (note == null) {
+                      return "Nombre Invalide";
+                    } else if (note < 0 || note > 10) {
+                      return "La note doit être entre 0 et 10";
+                    } else {
+                      return null;
+                    }
+                  },
+                ),
+                SizedBox(height: 16),
+                DropdownButtonFormField<String>(
+                  initialValue: _statusSelectionne,
+                  decoration: InputDecoration(
+                    labelText: 'Statut',
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                  ),
+                  items: ['À lire', 'En cours', 'Terminé', 'Abandonné']
+                      .map((s) => DropdownMenuItem(value: s, child: Text(s)))
+                      .toList(),
+                  onChanged: (value) {
+                    setState(() {
+                      _statusSelectionne = value!;
+                    });
+                  },
+                ),
+                SizedBox(height: 16),
+                DropdownButtonFormField(
+                  initialValue: _typeSelectionne,
+                  decoration: InputDecoration(
+                    labelText: 'Type',
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                  ),
+                  items: ['Manga', 'Manhwa', 'Manhua', 'Novel']
+                      .map((s) => DropdownMenuItem(value: s, child: Text(s)))
+                      .toList(),
+                  onChanged: (value) {
+                    setState(() {
+                      _typeSelectionne = value!;
+                    });
+                  },
+                ),
+                SizedBox(height: 16),
+                ExpansionTile(
+                  title: Text(
+                    "Genres (${_genreSelectionne.length}) sélectionnés",
+                  ),
+                  children: [
+                    TextField(
+                      controller: _rechercheController,
+                      decoration: InputDecoration(
+                        labelText: "Rechercher un genre",
+                        border: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(12),
                         ),
-                        genre: Value(_genreSelectionne.join(',')),
+                        prefixIcon: Icon(Icons.search),
                       ),
-                    );
+                      onChanged: (value) {
+                        setState(() {
+                          _rechercheGenre = value.toLowerCase();
+                        });
+                      },
+                    ),
+                    SizedBox(height: 16),
+                    Wrap(
+                      spacing: 8,
+                      children: tousLesGenres
+                          .where(
+                            (g) => g.toLowerCase().contains(_rechercheGenre),
+                          )
+                          .map(
+                            (genre) => FilterChip(
+                              label: Text(genre),
+                              selected: _genreSelectionne.contains(genre),
+                              onSelected: (selected) {
+                                setState(() {
+                                  selected
+                                      ? _genreSelectionne.add(genre)
+                                      : _genreSelectionne.remove(genre);
+                                });
+                              },
+                            ),
+                          )
+                          .toList(),
+                    ),
+                  ],
+                ),
+                SizedBox(height: 16),
 
-                    Navigator.pop(context);
-                    ref.invalidate(mangasProvider);
-                  }
-                },
-                child: Text("Ajouter"),
-              ),
-            ],
+                SwitchListTile(
+                  title: Text("Favori"),
+                  value: _estFavori,
+                  onChanged: (value) => setState(() {
+                    _estFavori = value;
+                  }),
+                ),
+                SizedBox(height: 16),
+                FilledButton(
+                  style: FilledButton.styleFrom(
+                    minimumSize: Size(double.infinity, 50),
+                  ),
+                  onPressed: () {
+                    if (_formKey.currentState!.validate()) {
+                      final dao = ref.read(mangaDaoProvider);
+                      dao.insertManga(
+                        MangaTableCompanion(
+                          id: Value.absent(),
+                          titre: Value(_titreController.text),
+                          description: Value.absent(),
+                          imagePath: Value.absent(),
+                          status: Value(_statusSelectionne),
+                          typeManga: Value(_typeSelectionne),
+                          estFavori: Value(_estFavori),
+                          note: Value(double.parse(_noteController.text)),
+                          chapitres: Value(
+                            double.parse(_chapitreController.text),
+                          ),
+                          genre: Value(_genreSelectionne.join(',')),
+                        ),
+                      );
+
+                      Navigator.pop(context);
+                      ref.invalidate(mangasProvider);
+                    }
+                  },
+                  child: Text("Ajouter"),
+                ),
+              ],
+            ),
           ),
         ),
       ),
