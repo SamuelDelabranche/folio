@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:folio/app/providers.dart';
 import 'package:folio/app/constants.dart';
+import 'package:folio/app/theme.dart';
 import 'package:folio/data/database/app_database.dart';
 import 'package:folio/data/database/daos/manga_dao.dart';
 
@@ -83,22 +84,21 @@ class _MangaDetailPage extends ConsumerState<MangaDetailPage> {
       canPop: false,
       onPopInvokedWithResult: (didPop, result) async {
         if (didPop) return;
+        final nav = Navigator.of(context);
         if (_modeEdition) {
-          if (_modeEdition) {
-            final mangaMisAJour = widget.mangaData.copyWith(
-              titre: _titreController.text,
-              description: Value(_descriptionController.text),
-              chapitres: double.parse(_chapitresController.text),
-              note: double.parse(_noteController.text),
-              status: _statutController,
-              typeManga: _typeController,
-              genre: Value(_genreSelectionne.join(',')),
-            );
-            await _dao.updateManga(mangaMisAJour);
-            ref.invalidate(mangasProvider);
-          }
+          final mangaMisAJour = widget.mangaData.copyWith(
+            titre: _titreController.text,
+            description: Value(_descriptionController.text),
+            chapitres: double.parse(_chapitresController.text),
+            note: double.parse(_noteController.text),
+            status: _statutController,
+            typeManga: _typeController,
+            genre: Value(_genreSelectionne.join(',')),
+          );
+          await _dao.updateManga(mangaMisAJour);
+          ref.invalidate(mangasProvider);
         }
-        Navigator.pop(context);
+        nav.pop();
       },
       child: Scaffold(
         appBar: AppBar(
@@ -141,6 +141,63 @@ class _MangaDetailPage extends ConsumerState<MangaDetailPage> {
                 });
               },
               icon: Icon(_modeEdition ? Icons.check : Icons.edit),
+            ),
+            IconButton(
+              onPressed: () async {
+                final nav = Navigator.of(context);
+                final messenger = ScaffoldMessenger.of(context);
+                showDialog(
+                  context: context,
+                  builder: (dialogContext) => AlertDialog(
+                    icon: Icon(
+                      Icons.warning_amber_rounded,
+                      color: AppColors.danger,
+                      size: 48,
+                    ),
+                    title: Text(
+                      'Attention !',
+                      style: TextStyle(color: AppColors.danger),
+                    ),
+                    content: Text(
+                      'Cette action est irréversible.\nLe manga sera définitivement supprimé.',
+                      textAlign: TextAlign.center,
+                    ),
+                    actions: [
+                      TextButton(
+                        onPressed: () => Navigator.pop(dialogContext),
+                        child: Text(
+                          'Annuler',
+                        ),
+                      ),
+                      TextButton(
+                        style: TextButton.styleFrom(
+                          foregroundColor: AppColors.danger,
+                        ),
+                        onPressed: () async {
+                          await _dao.deleteManga(widget.mangaData.id);
+                          ref.invalidate(mangasProvider);
+                          messenger.showSnackBar(
+                            SnackBar(
+                              backgroundColor: AppColors.success,
+                              content: Text(
+                                "Manga supprimé",
+                                textAlign: TextAlign.center,
+                                style: TextStyle(color: Colors.black87),
+                              ),
+                            ),
+                          );
+                          if (mounted) {
+                            nav.pop();
+                            nav.pop();
+                          }
+                        },
+                        child: Text('Supprimer'),
+                      ),
+                    ],
+                  ),
+                );
+              },
+              icon: Icon(Icons.delete_outline),
             ),
           ],
         ),
@@ -433,7 +490,7 @@ class _MangaDetailPage extends ConsumerState<MangaDetailPage> {
                     : ListTile(
                         leading: Icon(Icons.menu_book_outlined),
                         title: Text('Chapitres'),
-                        trailing: Text('${_chapitresController.text}'),
+                        trailing: Text(_chapitresController.text),
                         contentPadding: EdgeInsets.zero,
                       ),
                 _modeEdition
@@ -456,7 +513,7 @@ class _MangaDetailPage extends ConsumerState<MangaDetailPage> {
                     : ListTile(
                         leading: Icon(Icons.stars),
                         title: Text('Notes'),
-                        trailing: Text('${_noteController.text}'),
+                        trailing: Text(_noteController.text),
                         contentPadding: EdgeInsets.zero,
                       ),
               ],

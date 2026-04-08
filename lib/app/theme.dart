@@ -8,6 +8,10 @@ class AppColors {
     static const Color surfaceLight = Color(0xFFF5F5F5);
     static const Color textSecondary = Color(0xFF9E9E9E);
     static const Color stars = Color(0xFFFFD700);
+
+    static const Color danger = Color(0xFFCF6679);
+    static const Color info = Color(0xFF90CAF9);
+    static const Color success = Color(0xFFA5D6A7);
 }
 
 class AppTheme {

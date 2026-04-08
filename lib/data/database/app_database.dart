@@ -9,6 +9,7 @@ part 'app_database.g.dart';
 class AppDatabase extends _$AppDatabase {
   AppDatabase() : super(_openConnection());
 
+  @override
   late final MangaDao mangaDao = MangaDao(this);
 
   @override
