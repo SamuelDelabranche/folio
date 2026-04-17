@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:folio/features/library/library_page.dart';
+import 'package:folio/features/home/home_page.dart';
 import 'app/theme.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
@@ -17,7 +17,7 @@ class MyApp extends StatelessWidget {
       theme: AppTheme.light,
       darkTheme: AppTheme.dark,
       themeMode: ThemeMode.system,
-      home: LibraryPage(),
+      home: HomePage(),
     );
   }
 }
