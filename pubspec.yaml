@@ -34,6 +34,8 @@ dependencies:
   path: ^1.9.1
   flutter_riverpod: ^3.2.1
   sqlite3_flutter_libs: ^0.5.24
+  share_plus: ^12.0.2
+  file_picker: ^10.0.0
 
 
   flutter:

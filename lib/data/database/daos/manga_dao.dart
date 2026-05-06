@@ -23,4 +23,8 @@ class MangaDao extends DatabaseAccessor<AppDatabase> with _$MangaDaoMixin {
   Future<void> deleteManga(int id) {
     return (delete(mangaTable)..where((m) => m.id.equals(id))).go();
   }
+
+  Future<void> deleteAllMangas() {
+    return delete(mangaTable).go();
+  }
 }
