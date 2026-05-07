@@ -135,53 +135,111 @@ class _SettingsPage extends ConsumerState<SettingsPage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text("Paramètres de l'application")),
+      appBar: AppBar(title: const Text('Paramètres')),
       body: SingleChildScrollView(
-        child: Padding(
-          padding: EdgeInsets.all(16),
-          child: Column(
-            children: [
-              Row(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+
+            // ── Données ──
+            _SectionLabel('Données'),
+            Card(
+              margin: EdgeInsets.zero,
+              child: Column(
                 children: [
-                  Expanded(flex: 1, child: Divider()),
-                  Text('Données'),
-                  Expanded(flex: 1, child: Divider()),
+                  _SettingsTile(
+                    icon: Icons.upload_outlined,
+                    iconColor: Colors.blue,
+                    title: 'Exporter la bibliothèque',
+                    subtitle: 'Partager un fichier JSON',
+                    onTap: _exporter,
+                  ),
+                  const Divider(height: 1, indent: 68),
+                  _SettingsTile(
+                    icon: Icons.download_outlined,
+                    iconColor: Colors.green,
+                    title: 'Importer la bibliothèque',
+                    subtitle: 'Remplace les données existantes',
+                    onTap: _importer,
+                  ),
                 ],
               ),
-              ListTile(
-                leading: Icon(Icons.upload),
-                title: Text('Exporter la bibliothèque'),
-                trailing: Icon(Icons.chevron_right),
-                onTap: () {
-                  _exporter();
-                },
-              ),
-              ListTile(
-                leading: Icon(Icons.download),
-                title: Text('Importer la bibliothèque'),
-                trailing: Icon(Icons.chevron_right),
-                onTap: () {
-                  _importer();
-                },
-              ),
-              SizedBox(height: 16),
-              Row(
-                children: [
-                  Expanded(flex: 1, child: Divider()),
-                  Text('Apparence'),
-                  Expanded(flex: 1, child: Divider()),
-                ],
-              ),
-              ListTile(
-                leading: Icon(Icons.palette_outlined),
-                title: Text('Thème'),
-                trailing: Text("Automatique"),
+            ),
+            const SizedBox(height: 24),
+
+            // ── Apparence ──
+            _SectionLabel('Apparence'),
+            Card(
+              margin: EdgeInsets.zero,
+              child: _SettingsTile(
+                icon: Icons.palette_outlined,
+                iconColor: Colors.purple,
+                title: 'Thème',
+                trailing: const Text('Automatique', style: TextStyle(color: Colors.grey, fontSize: 13)),
                 onTap: null,
               ),
-            ],
-          ),
+            ),
+          ],
         ),
       ),
+    );
+  }
+}
+
+class _SectionLabel extends StatelessWidget {
+  final String label;
+  const _SectionLabel(this.label);
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.only(left: 4, bottom: 8),
+      child: Text(
+        label,
+        style: TextStyle(
+          fontSize: 13,
+          fontWeight: FontWeight.w600,
+          color: Theme.of(context).colorScheme.primary,
+        ),
+      ),
+    );
+  }
+}
+
+class _SettingsTile extends StatelessWidget {
+  final IconData icon;
+  final Color iconColor;
+  final String title;
+  final String? subtitle;
+  final Widget? trailing;
+  final VoidCallback? onTap;
+
+  const _SettingsTile({
+    required this.icon,
+    required this.iconColor,
+    required this.title,
+    this.subtitle,
+    this.trailing,
+    this.onTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return ListTile(
+      leading: Container(
+        width: 36,
+        height: 36,
+        decoration: BoxDecoration(
+          color: iconColor,
+          borderRadius: BorderRadius.circular(8),
+        ),
+        child: Icon(icon, color: Colors.white, size: 20),
+      ),
+      title: Text(title),
+      subtitle: subtitle != null ? Text(subtitle!, style: const TextStyle(fontSize: 12)) : null,
+      trailing: trailing ?? const Icon(Icons.chevron_right, size: 20, color: Colors.grey),
+      onTap: onTap,
     );
   }
 }

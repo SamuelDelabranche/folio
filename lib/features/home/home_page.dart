@@ -18,7 +18,13 @@ class _HomePage extends ConsumerState<HomePage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      body: _pages[_indexActif],
+      body: AnimatedSwitcher(
+        duration: const Duration(milliseconds: 200),
+        child: KeyedSubtree(
+          key: ValueKey(_indexActif),
+          child: _pages[_indexActif],
+        ),
+      ),
       bottomNavigationBar: NavigationBar(
         selectedIndex: _indexActif,
         onDestinationSelected: (value) {

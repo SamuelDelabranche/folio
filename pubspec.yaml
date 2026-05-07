@@ -36,6 +36,7 @@ dependencies:
   sqlite3_flutter_libs: ^0.5.24
   share_plus: ^12.0.2
   file_picker: ^10.0.0
+  flutter_native_splash: ^2.4.6
 
 
   flutter:
@@ -69,6 +70,18 @@ flutter:
   # included with your application, so that you can use the icons in
   # the material Icons class.
   uses-material-design: true
+
+  assets:
+    - assets/splash/
+
+flutter_native_splash:
+  color: "#FFFFFF"
+  color_dark: "#FFFFFF"
+  image: assets/splash/logo.png
+  android_12:
+    color: "#FFFFFF"
+    color_dark: "#FFFFFF"
+    image: assets/splash/logo.png
 
   # To add assets to your application, add an assets section, like this:
   # assets:

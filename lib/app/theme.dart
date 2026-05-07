@@ -19,12 +19,32 @@ class AppTheme {
         brightness: Brightness.dark,
         scaffoldBackgroundColor: AppColors.backgroundDark,
         colorScheme: ColorScheme.fromSeed(seedColor: AppColors.accentDark, brightness: Brightness.dark),
-        useMaterial3: true
+        useMaterial3: true,
+        appBarTheme: const AppBarTheme(
+          centerTitle: true,
+          elevation: 0,
+          scrolledUnderElevation: 0,
+          titleTextStyle: TextStyle(
+            fontSize: 18,
+            fontWeight: FontWeight.bold,
+            color: Colors.white,
+          ),
+        ),
     );
     static ThemeData get light => ThemeData(
         brightness: Brightness.light,
         scaffoldBackgroundColor: AppColors.surfaceLight,
         colorScheme: ColorScheme.fromSeed(seedColor: AppColors.accentLight, brightness: Brightness.light),
-        useMaterial3: true
+        useMaterial3: true,
+        appBarTheme: const AppBarTheme(
+          centerTitle: true,
+          elevation: 0,
+          scrolledUnderElevation: 0,
+          titleTextStyle: TextStyle(
+            fontSize: 18,
+            fontWeight: FontWeight.bold,
+            color: Colors.black87,
+          ),
+        ),
     );
 }

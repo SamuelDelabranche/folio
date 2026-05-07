@@ -1,6 +1,15 @@
 import 'package:flutter/material.dart';
 import 'package:folio/data/database/app_database.dart';
 
+const List<Color> _pastelColors = [
+  Color(0xFFFFB3BA),
+  Color(0xFFFFDFBA),
+  Color(0xFFFFFFBA),
+  Color(0xFFBAFFBA),
+  Color(0xFFBAE1FF),
+  Color(0xFFD4BAFF),
+];
+
 class MangaCard extends StatelessWidget {
   final MangaTableData mangaData;
 
@@ -21,7 +30,7 @@ class MangaCard extends StatelessWidget {
             child: Stack(
               children: [
                 Container(
-                  color: Colors.deepPurple.shade200,
+                  color: _pastelColors[mangaData.id % _pastelColors.length],
                   width: double.infinity,
                   height: double.infinity,
                 ),
