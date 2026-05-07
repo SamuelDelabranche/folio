@@ -34,10 +34,19 @@ class _SettingsPage extends ConsumerState<SettingsPage> {
   }
 
   void _exporter() async {
-    List<MangaTableData> _mangas = await _dao.getAllMangas();
+    final messenger = ScaffoldMessenger.of(context);
+    try {
+      final mangas = await _dao.getAllMangas();
 
-    List<Map<String, dynamic>> _prepJson = _mangas.map((manga) {
-      return {
+      if (mangas.isEmpty) {
+        messenger.showSnackBar(SnackBar(
+          backgroundColor: AppColors.info,
+          content: const Text('Aucun manga à exporter', textAlign: TextAlign.center, style: TextStyle(color: Colors.black87)),
+        ));
+        return;
+      }
+
+      final prepJson = mangas.map((manga) => {
         'titre': manga.titre,
         'description': manga.description,
         'imagePath': manga.imagePath,
@@ -47,16 +56,65 @@ class _SettingsPage extends ConsumerState<SettingsPage> {
         'estFavori': manga.estFavori,
         'note': manga.note,
         'chapitres': manga.chapitres,
-      };
-    }).toList();
+      }).toList();
 
-    final String jsonMangas = jsonEncode(_prepJson);
+      final dossier = await getTemporaryDirectory();
+      final fichier = File('${dossier.path}/folio_export.json');
+      await fichier.writeAsString(jsonEncode(prepJson));
+      await SharePlus.instance.share(ShareParams(files: [XFile(fichier.path)]));
+    } catch (e) {
+      messenger.showSnackBar(SnackBar(
+        backgroundColor: AppColors.danger,
+        content: const Text("Erreur lors de l'export", textAlign: TextAlign.center, style: TextStyle(color: Colors.white)),
+      ));
+    }
+  }
 
-    final dossier = await getTemporaryDirectory();
-    final fichier = File('${dossier.path}/folio_export.json');
-    await fichier.writeAsString(jsonMangas);
-
-    await SharePlus.instance.share(ShareParams(files: [XFile(fichier.path)]));
+  void _showThemePicker(BuildContext context, WidgetRef ref, ThemeMode current) {
+    showModalBottomSheet(
+      context: context,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      builder: (_) => Padding(
+        padding: const EdgeInsets.fromLTRB(16, 12, 16, 32),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Container(
+              width: 36, height: 4,
+              margin: const EdgeInsets.only(bottom: 20),
+              decoration: BoxDecoration(
+                color: Colors.grey.shade400,
+                borderRadius: BorderRadius.circular(2),
+              ),
+            ),
+            const Text('Apparence', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
+            const SizedBox(height: 16),
+            _ThemeOption(
+              icon: Icons.light_mode_outlined,
+              label: 'Clair',
+              selected: current == ThemeMode.light,
+              onTap: () { ref.read(themeModeProvider.notifier).set(ThemeMode.light); Navigator.pop(context); },
+            ),
+            const SizedBox(height: 8),
+            _ThemeOption(
+              icon: Icons.brightness_auto_outlined,
+              label: 'Automatique',
+              selected: current == ThemeMode.system,
+              onTap: () { ref.read(themeModeProvider.notifier).set(ThemeMode.system); Navigator.pop(context); },
+            ),
+            const SizedBox(height: 8),
+            _ThemeOption(
+              icon: Icons.dark_mode_outlined,
+              label: 'Sombre',
+              selected: current == ThemeMode.dark,
+              onTap: () { ref.read(themeModeProvider.notifier).set(ThemeMode.dark); Navigator.pop(context); },
+            ),
+          ],
+        ),
+      ),
+    );
   }
 
   void _importer() {
@@ -83,23 +141,20 @@ class _SettingsPage extends ConsumerState<SettingsPage> {
             onPressed: () async {
               final messenger = ScaffoldMessenger.of(context);
               Navigator.pop(dialogContext);
+              try {
+                final result = await FilePicker.platform.pickFiles(
+                  type: FileType.custom,
+                  allowedExtensions: ['json'],
+                );
+                if (result == null) return;
 
-              final result = await FilePicker.platform.pickFiles(
-                type: FileType.custom,
-                allowedExtensions: ['json'],
-              );
+                final fichier = File(result.files.single.path!);
+                final contenu = await fichier.readAsString();
+                final List<dynamic> listeJson = jsonDecode(contenu);
 
-              if (result == null) return;
-
-              final fichier = File(result.files.single.path!);
-              final contenu = await fichier.readAsString();
-              final List<dynamic> listeJson = jsonDecode(contenu);
-
-              await _dao.deleteAllMangas();
-
-              for (final item in listeJson) {
-                await _dao.insertManga(
-                  MangaTableCompanion(
+                await _dao.deleteAllMangas();
+                for (final item in listeJson) {
+                  await _dao.insertManga(MangaTableCompanion(
                     titre: Value(item['titre'] as String),
                     description: Value(item['description'] as String?),
                     imagePath: Value(item['imagePath'] as String?),
@@ -109,21 +164,19 @@ class _SettingsPage extends ConsumerState<SettingsPage> {
                     estFavori: Value(item['estFavori'] as bool),
                     note: Value((item['note'] as num).toDouble()),
                     chapitres: Value((item['chapitres'] as num).toDouble()),
-                  ),
-                );
-              }
-
-              ref.invalidate(mangasProvider);
-              messenger.showSnackBar(
-                SnackBar(
+                  ));
+                }
+                ref.invalidate(mangasProvider);
+                messenger.showSnackBar(SnackBar(
                   backgroundColor: AppColors.success,
-                  content: Text(
-                    'Bibliothèque importée avec succès',
-                    textAlign: TextAlign.center,
-                    style: TextStyle(color: Colors.black87),
-                  ),
-                ),
-              );
+                  content: const Text('Bibliothèque importée avec succès', textAlign: TextAlign.center, style: TextStyle(color: Colors.black87)),
+                ));
+              } catch (e) {
+                messenger.showSnackBar(SnackBar(
+                  backgroundColor: AppColors.danger,
+                  content: const Text('Fichier invalide ou corrompu', textAlign: TextAlign.center, style: TextStyle(color: Colors.white)),
+                ));
+              }
             },
             child: Text('Continuer'),
           ),
@@ -172,12 +225,22 @@ class _SettingsPage extends ConsumerState<SettingsPage> {
             _SectionLabel('Apparence'),
             Card(
               margin: EdgeInsets.zero,
-              child: _SettingsTile(
-                icon: Icons.palette_outlined,
-                iconColor: Colors.purple,
-                title: 'Thème',
-                trailing: const Text('Automatique', style: TextStyle(color: Colors.grey, fontSize: 13)),
-                onTap: null,
+              child: Consumer(
+                builder: (context, ref, _) {
+                  final mode = ref.watch(themeModeProvider);
+                  final label = switch (mode) {
+                    ThemeMode.light => 'Clair',
+                    ThemeMode.dark => 'Sombre',
+                    ThemeMode.system => 'Automatique',
+                  };
+                  return _SettingsTile(
+                    icon: Icons.palette_outlined,
+                    iconColor: Colors.purple,
+                    title: 'Thème',
+                    trailing: Text(label, style: const TextStyle(color: Colors.grey, fontSize: 13)),
+                    onTap: () => _showThemePicker(context, ref, mode),
+                  );
+                },
               ),
             ),
           ],
@@ -201,6 +264,58 @@ class _SectionLabel extends StatelessWidget {
           fontSize: 13,
           fontWeight: FontWeight.w600,
           color: Theme.of(context).colorScheme.primary,
+        ),
+      ),
+    );
+  }
+}
+
+class _ThemeOption extends StatelessWidget {
+  final IconData icon;
+  final String label;
+  final bool selected;
+  final VoidCallback onTap;
+
+  const _ThemeOption({
+    required this.icon,
+    required this.label,
+    required this.selected,
+    required this.onTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final color = Theme.of(context).colorScheme.primary;
+    return InkWell(
+      onTap: onTap,
+      borderRadius: BorderRadius.circular(12),
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 200),
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+        decoration: BoxDecoration(
+          borderRadius: BorderRadius.circular(12),
+          color: selected ? color.withOpacity(0.12) : Colors.transparent,
+          border: Border.all(
+            color: selected ? color : Colors.grey.withOpacity(0.2),
+            width: selected ? 1.5 : 1,
+          ),
+        ),
+        child: Row(
+          children: [
+            Icon(icon, color: selected ? color : Colors.grey, size: 22),
+            const SizedBox(width: 14),
+            Text(
+              label,
+              style: TextStyle(
+                fontSize: 15,
+                fontWeight: selected ? FontWeight.w600 : FontWeight.normal,
+                color: selected ? color : null,
+              ),
+            ),
+            const Spacer(),
+            if (selected)
+              Icon(Icons.check_circle_rounded, color: color, size: 20),
+          ],
         ),
       ),
     );

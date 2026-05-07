@@ -1,6 +1,7 @@
 import 'dart:math';
 import 'package:flutter/material.dart';
 import 'package:folio/features/home/home_page.dart';
+import 'package:folio/features/onboarding/onboarding_page.dart';
 
 class SplashPage extends StatefulWidget {
   const SplashPage({super.key});
@@ -100,8 +101,11 @@ class _SplashPageState extends State<SplashPage> with TickerProviderStateMixin {
     if (!mounted) return;
     await _exitController.forward();
     if (!mounted) return;
+    final firstLaunch = await isFirstLaunch();
+    if (!mounted) return;
     Navigator.of(context).pushReplacement(PageRouteBuilder(
-      pageBuilder: (_, __, ___) => const HomePage(),
+      pageBuilder: (_, __, ___) =>
+          firstLaunch ? const OnboardingPage() : const HomePage(),
       transitionDuration: const Duration(milliseconds: 500),
       transitionsBuilder: (_, anim, __, child) =>
           FadeTransition(opacity: anim, child: child),
@@ -144,11 +148,13 @@ class _SplashPageState extends State<SplashPage> with TickerProviderStateMixin {
             ),
 
             // ── Particules ─────────────────────────────────
-            AnimatedBuilder(
-              animation: _particleController,
-              builder: (_, __) => CustomPaint(
-                painter: _ParticlePainter(_particles, _particleController.value),
-                size: MediaQuery.of(context).size,
+            RepaintBoundary(
+              child: AnimatedBuilder(
+                animation: _particleController,
+                builder: (_, __) => CustomPaint(
+                  painter: _ParticlePainter(_particles, _particleController.value),
+                  size: MediaQuery.of(context).size,
+                ),
               ),
             ),
 
@@ -164,28 +170,25 @@ class _SplashPageState extends State<SplashPage> with TickerProviderStateMixin {
                     Stack(
                       alignment: Alignment.center,
                       children: [
-                        // Halo violet
-                        Opacity(
-                          opacity: _glowRadius.value * 0.6,
-                          child: Container(
-                            width: 200 * _glowRadius.value,
-                            height: 200 * _glowRadius.value,
-                            decoration: const BoxDecoration(
-                              shape: BoxShape.circle,
-                              boxShadow: [
-                                BoxShadow(
-                                  color: Color(0xFFBB86FC),
-                                  blurRadius: 90,
-                                  spreadRadius: 30,
-                                ),
-                              ],
-                            ),
+                        // Halo violet (opacité dans la couleur, pas via Opacity widget)
+                        Container(
+                          width: 200 * _glowRadius.value,
+                          height: 200 * _glowRadius.value,
+                          decoration: BoxDecoration(
+                            shape: BoxShape.circle,
+                            boxShadow: [
+                              BoxShadow(
+                                color: Color(0xFFBB86FC).withOpacity(_glowRadius.value * 0.6),
+                                blurRadius: 90,
+                                spreadRadius: 30,
+                              ),
+                            ],
                           ),
                         ),
 
-                        // Logo PNG (fond transparent)
-                        Opacity(
-                          opacity: _logoOpacity.value,
+                        // Logo PNG (FadeTransition évite l'Opacity widget)
+                        FadeTransition(
+                          opacity: _logoOpacity,
                           child: Transform.scale(
                             scale: _logoScale.value,
                             child: Image.asset(
@@ -204,8 +207,8 @@ class _SplashPageState extends State<SplashPage> with TickerProviderStateMixin {
                     // FOLIO
                     SlideTransition(
                       position: _titleSlide,
-                      child: Opacity(
-                        opacity: _titleOpacity.value,
+                      child: FadeTransition(
+                        opacity: _titleOpacity,
                         child: ShaderMask(
                           shaderCallback: (bounds) => const LinearGradient(
                             colors: [Color(0xFFBB86FC), Color(0xFFE91E8C)],
@@ -226,8 +229,8 @@ class _SplashPageState extends State<SplashPage> with TickerProviderStateMixin {
                     const SizedBox(height: 10),
 
                     // MANGA TRACKER
-                    Opacity(
-                      opacity: _subtitleOpacity.value,
+                    FadeTransition(
+                      opacity: _subtitleOpacity,
                       child: Text(
                         'MANGA TRACKER',
                         style: TextStyle(
