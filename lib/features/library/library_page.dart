@@ -230,9 +230,7 @@ class _LibraryPage extends ConsumerState<LibraryPage> {
                           if (!_modeSelection) {
                             Navigator.push(
                               context,
-                              MaterialPageRoute(
-                                builder: (_) => MangaDetailPage(mangaData: manga),
-                              ),
+                              fadeScaleRoute(MangaDetailPage(mangaData: manga)),
                             );
                           } else {
                             setState(() {

@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:folio/features/library/library_page.dart';
 import 'package:folio/features/settings/settings_page.dart';
 import 'package:folio/features/statistics/statistics_page.dart';
+import 'package:folio/services/update_service.dart';
 
 class HomePage extends ConsumerStatefulWidget {
   const HomePage({super.key});
@@ -14,6 +15,43 @@ class HomePage extends ConsumerStatefulWidget {
 class _HomePage extends ConsumerState<HomePage> {
   int _indexActif = 0;
   final List<Widget> _pages = [LibraryPage(), StatisticsPage(), SettingsPage()];
+
+  @override
+  void initState() {
+    super.initState();
+    UpdateService.checkForUpdate().then((info) {
+      if (info != null && mounted) _showUpdateDialog(info);
+    });
+  }
+
+  void _showUpdateDialog(UpdateInfo info) {
+    showDialog(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        icon: const Icon(Icons.system_update_alt_outlined, size: 44, color: Colors.deepPurple),
+        title: const Text('Mise à jour disponible'),
+        content: Text(
+          'La version ${info.latestVersion} est disponible.\n\n'
+          'Télécharge le nouvel APK depuis GitHub et installe-le pour mettre à jour.',
+          textAlign: TextAlign.center,
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx),
+            child: const Text('Plus tard'),
+          ),
+          FilledButton.icon(
+            onPressed: () {
+              Navigator.pop(ctx);
+              UpdateService.openReleasePage(info.releaseUrl);
+            },
+            icon: const Icon(Icons.download_outlined),
+            label: const Text('Télécharger'),
+          ),
+        ],
+      ),
+    );
+  }
 
   @override
   Widget build(BuildContext context) {

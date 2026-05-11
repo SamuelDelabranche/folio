@@ -47,3 +47,7 @@ app.*.map.json
 *.db
 *.sqlite
 *.db-journal
+
+# Signing — ne jamais committer ces fichiers
+android/key.properties
+android/*.jks

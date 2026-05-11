@@ -396,8 +396,8 @@ class _MangaDetailPage extends ConsumerState<MangaDetailPage> {
                                       borderRadius: BorderRadius.circular(20),
                                     ),
                                     child: Text(
-                                      '${widget.mangaData.note} / 10',
-                                      style: TextStyle(fontWeight: FontWeight.bold, color: _couleurNote(widget.mangaData.note)),
+                                      '${_noteEdition.toStringAsFixed(1)} / 10',
+                                      style: TextStyle(fontWeight: FontWeight.bold, color: _couleurNote(_noteEdition)),
                                     ),
                                   ),
                                 ),
