@@ -8,6 +8,7 @@ import 'package:folio/app/providers.dart';
 import 'package:folio/app/theme.dart';
 import 'package:folio/data/database/app_database.dart';
 import 'package:folio/data/database/daos/manga_dao.dart';
+import 'package:package_info_plus/package_info_plus.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:share_plus/share_plus.dart';
 import 'package:drift/drift.dart' hide Column;
@@ -221,7 +222,6 @@ class _SettingsPage extends ConsumerState<SettingsPage> {
             ),
             const SizedBox(height: 24),
 
-            // ── Apparence ──
             _SectionLabel('Apparence'),
             Card(
               margin: EdgeInsets.zero,
@@ -242,6 +242,19 @@ class _SettingsPage extends ConsumerState<SettingsPage> {
                   );
                 },
               ),
+            ),
+            const SizedBox(height: 32),
+            FutureBuilder<PackageInfo>(
+              future: PackageInfo.fromPlatform(),
+              builder: (context, snapshot) {
+                final version = snapshot.data?.version ?? '–';
+                return Center(
+                  child: Text(
+                    'Folio v$version',
+                    style: TextStyle(fontSize: 12, color: Colors.grey.shade500),
+                  ),
+                );
+              },
             ),
           ],
         ),
@@ -294,9 +307,9 @@ class _ThemeOption extends StatelessWidget {
         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
         decoration: BoxDecoration(
           borderRadius: BorderRadius.circular(12),
-          color: selected ? color.withOpacity(0.12) : Colors.transparent,
+          color: selected ? color.withValues(alpha: 0.12) : Colors.transparent,
           border: Border.all(
-            color: selected ? color : Colors.grey.withOpacity(0.2),
+            color: selected ? color : Colors.grey.withValues(alpha: 0.2),
             width: selected ? 1.5 : 1,
           ),
         ),

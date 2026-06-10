@@ -8,6 +8,8 @@ import 'package:folio/features/manga_detail/manga_detail_page.dart';
 import 'package:folio/app/transitions.dart';
 import 'package:folio/shared/widgets/manga_card.dart';
 
+enum TriOption { aucun, titreAZ, titreZA, meilleureNote, moinsNote, plusChapitres, moinsChapitres }
+
 class LibraryPage extends ConsumerStatefulWidget {
   const LibraryPage({super.key});
 
@@ -17,14 +19,252 @@ class LibraryPage extends ConsumerStatefulWidget {
 
 class _LibraryPage extends ConsumerState<LibraryPage> {
   bool _modeSelection = false;
-  List<MangaTableData> _mangaSelectionne = [];
+  final List<MangaTableData> _mangaSelectionne = [];
   final _rechercheController = TextEditingController();
   String _recherche = '';
+  String? _filtreStatus;
+  String? _filtreType;
+  bool? _filtreFavori;
+  RangeValues _filtreNote = const RangeValues(0, 10);
+  RangeValues _filtreChapitres = const RangeValues(0, 1000);
+  TriOption _tri = TriOption.aucun;
+
+  int get _filtresActifs {
+    int count = 0;
+    if (_filtreStatus != null) count++;
+    if (_filtreType != null) count++;
+    if (_filtreFavori != null) count++;
+    if (_filtreNote.start != 0 || _filtreNote.end != 10) count++;
+    if (_filtreChapitres.start != 0 || _filtreChapitres.end != 1000) count++;
+    if (_tri != TriOption.aucun) count++;
+    return count;
+  }
 
   @override
   void dispose() {
     _rechercheController.dispose();
     super.dispose();
+  }
+
+  void _showFiltres() {
+    FocusScope.of(context).unfocus();
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      builder: (ctx) => StatefulBuilder(
+        builder: (ctx, setModalState) {
+          return SizedBox(
+            height: MediaQuery.of(ctx).size.height * 0.6,
+            width: double.infinity,
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Center(
+                  child: Container(
+                    width: 36,
+                    height: 4,
+                    margin: const EdgeInsets.only(top: 12, bottom: 16),
+                    decoration: BoxDecoration(
+                      color: Colors.grey.shade400,
+                      borderRadius: BorderRadius.circular(2),
+                    ),
+                  ),
+                ),
+                Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 16),
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      const Text(
+                        'Filtres & Tri',
+                        style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                      ),
+                      TextButton(
+                        onPressed: () {
+                          setState(() {
+                            _filtreStatus = null;
+                            _filtreType = null;
+                            _filtreFavori = null;
+                            _filtreNote = const RangeValues(0, 10);
+                            _filtreChapitres = const RangeValues(0, 1000);
+                            _tri = TriOption.aucun;
+                          });
+                          setModalState(() {});
+                        },
+                        child: const Text('Réinitialiser'),
+                      ),
+                    ],
+                  ),
+                ),
+                const Divider(height: 1),
+                Expanded(
+                  child: SingleChildScrollView(
+                    padding: const EdgeInsets.fromLTRB(16, 16, 16, 32),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        _FiltreSection(
+                          titre: 'Trier par',
+                          child: Wrap(
+                            spacing: 8,
+                            runSpacing: 4,
+                            children: [
+                              _TriCycleChip(
+                                baseLabel: 'Alphabétique',
+                                option1: TriOption.titreAZ,
+                                label1: '↓',
+                                option2: TriOption.titreZA,
+                                label2: '↑',
+                                current: _tri,
+                                onTap: (v) { setState(() => _tri = v); setModalState(() {}); },
+                              ),
+                              _TriCycleChip(
+                                baseLabel: 'Note',
+                                option1: TriOption.meilleureNote,
+                                label1: '↓',
+                                option2: TriOption.moinsNote,
+                                label2: '↑',
+                                current: _tri,
+                                onTap: (v) { setState(() => _tri = v); setModalState(() {}); },
+                              ),
+                              _TriCycleChip(
+                                baseLabel: 'Chapitres',
+                                option1: TriOption.plusChapitres,
+                                label1: '↓',
+                                option2: TriOption.moinsChapitres,
+                                label2: '↑',
+                                current: _tri,
+                                onTap: (v) { setState(() => _tri = v); setModalState(() {}); },
+                              ),
+                            ],
+                          ),
+                        ),
+                        const SizedBox(height: 20),
+                        _FiltreSection(
+                          titre: 'Statut',
+                          child: Wrap(
+                            spacing: 8,
+                            runSpacing: 4,
+                            children: ['À lire', 'En cours', 'Terminé', 'Abandonné'].map((s) {
+                              return FilterChip(
+                                label: Text(s),
+                                selected: _filtreStatus == s,
+                                onSelected: (v) {
+                                  setState(() => _filtreStatus = v ? s : null);
+                                  setModalState(() {});
+                                },
+                              );
+                            }).toList(),
+                          ),
+                        ),
+                        const SizedBox(height: 20),
+                        _FiltreSection(
+                          titre: 'Type',
+                          child: Wrap(
+                            spacing: 8,
+                            runSpacing: 4,
+                            children: ['Manga', 'Manhwa', 'Manhua', 'Novel'].map((t) {
+                              return FilterChip(
+                                label: Text(t),
+                                selected: _filtreType == t,
+                                onSelected: (v) {
+                                  setState(() => _filtreType = v ? t : null);
+                                  setModalState(() {});
+                                },
+                              );
+                            }).toList(),
+                          ),
+                        ),
+                        const SizedBox(height: 20),
+                        _FiltreSection(
+                          titre: 'Favoris',
+                          child: FilterChip(
+                            label: const Text('Favoris uniquement'),
+                            avatar: Icon(
+                              Icons.favorite,
+                              size: 14,
+                              color: _filtreFavori == true ? Colors.red : Colors.grey,
+                            ),
+                            selected: _filtreFavori == true,
+                            onSelected: (v) {
+                              setState(() => _filtreFavori = v ? true : null);
+                              setModalState(() {});
+                            },
+                          ),
+                        ),
+                        const SizedBox(height: 20),
+                        _FiltreSection(
+                          titre: 'Note',
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Row(
+                                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                children: [
+                                  Text('${_filtreNote.start.toInt()}', style: const TextStyle(fontSize: 12)),
+                                  Text('${_filtreNote.end.toInt()}', style: const TextStyle(fontSize: 12)),
+                                ],
+                              ),
+                              RangeSlider(
+                                values: _filtreNote,
+                                min: 0,
+                                max: 10,
+                                divisions: 10,
+                                labels: RangeLabels(
+                                  _filtreNote.start.toInt().toString(),
+                                  _filtreNote.end.toInt().toString(),
+                                ),
+                                onChanged: (v) {
+                                  setState(() => _filtreNote = v);
+                                  setModalState(() {});
+                                },
+                              ),
+                            ],
+                          ),
+                        ),
+                        const SizedBox(height: 20),
+                        _FiltreSection(
+                          titre: 'Chapitres lus',
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Row(
+                                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                children: [
+                                  Text('${_filtreChapitres.start.toInt()}', style: const TextStyle(fontSize: 12)),
+                                  Text('${_filtreChapitres.end.toInt()}', style: const TextStyle(fontSize: 12)),
+                                ],
+                              ),
+                              RangeSlider(
+                                values: _filtreChapitres,
+                                min: 0,
+                                max: 1000,
+                                divisions: 100,
+                                labels: RangeLabels(
+                                  _filtreChapitres.start.toInt().toString(),
+                                  _filtreChapitres.end.toInt().toString(),
+                                ),
+                                onChanged: (v) {
+                                  setState(() => _filtreChapitres = v);
+                                  setModalState(() {});
+                                },
+                              ),
+                            ],
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          );
+        },
+      ),
+    ).then((_) { if (mounted) FocusScope.of(context).unfocus(); });
   }
 
   @override
@@ -45,6 +285,12 @@ class _LibraryPage extends ConsumerState<LibraryPage> {
               },
               icon: const Icon(Icons.close),
               label: const Text('Annuler'),
+            )
+          else
+            Badge(
+              isLabelVisible: _filtresActifs > 0,
+              label: Text('$_filtresActifs'),
+              child: IconButton(onPressed: _showFiltres, icon: const Icon(Icons.tune)),
             ),
         ],
         bottom: PreferredSize(
@@ -89,7 +335,7 @@ class _LibraryPage extends ConsumerState<LibraryPage> {
               ),
               if (_modeSelection)
                 Container(
-                  color: AppColors.danger.withOpacity(0.1),
+                  color: AppColors.danger.withValues(alpha: 0.1),
                   width: double.infinity,
                   padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
                   child: Row(
@@ -167,9 +413,32 @@ class _LibraryPage extends ConsumerState<LibraryPage> {
         loading: () => const Center(child: CircularProgressIndicator()),
         error: (e, st) => Center(child: Text('Erreur: $e')),
         data: (liste) {
-          final listeFiltree = _recherche.isEmpty
-              ? liste
-              : liste.where((m) => m.titre.toLowerCase().contains(_recherche)).toList();
+          final listeFiltree = liste.where((m) {
+            if (_recherche.isNotEmpty && !m.titre.toLowerCase().contains(_recherche)) return false;
+            if (_filtreStatus != null && m.status != _filtreStatus) return false;
+            if (_filtreType != null && m.typeManga != _filtreType) return false;
+            if (_filtreFavori != null && m.estFavori != _filtreFavori) return false;
+            if (m.note < _filtreNote.start || m.note > _filtreNote.end) return false;
+            if (m.chapitres < _filtreChapitres.start || m.chapitres > _filtreChapitres.end) return false;
+            return true;
+          }).toList();
+
+          switch (_tri) {
+            case TriOption.titreAZ:
+              listeFiltree.sort((a, b) => a.titre.compareTo(b.titre));
+            case TriOption.titreZA:
+              listeFiltree.sort((a, b) => b.titre.compareTo(a.titre));
+            case TriOption.meilleureNote:
+              listeFiltree.sort((a, b) => b.note.compareTo(a.note));
+            case TriOption.moinsNote:
+              listeFiltree.sort((a, b) => a.note.compareTo(b.note));
+            case TriOption.plusChapitres:
+              listeFiltree.sort((a, b) => b.chapitres.compareTo(a.chapitres));
+            case TriOption.moinsChapitres:
+              listeFiltree.sort((a, b) => a.chapitres.compareTo(b.chapitres));
+            case TriOption.aucun:
+              break;
+          }
 
           if (liste.isEmpty) {
             return Center(
@@ -268,6 +537,74 @@ class _LibraryPage extends ConsumerState<LibraryPage> {
           );
         },
       ),
+    );
+  }
+}
+
+class _FiltreSection extends StatelessWidget {
+  final String titre;
+  final Widget child;
+
+  const _FiltreSection({required this.titre, required this.child});
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          titre,
+          style: TextStyle(
+            fontWeight: FontWeight.w600,
+            fontSize: 13,
+            color: Theme.of(context).colorScheme.primary,
+          ),
+        ),
+        const SizedBox(height: 8),
+        child,
+      ],
+    );
+  }
+}
+
+class _TriCycleChip extends StatelessWidget {
+  final String baseLabel;
+  final TriOption option1;
+  final String label1;
+  final TriOption option2;
+  final String label2;
+  final TriOption current;
+  final void Function(TriOption) onTap;
+
+  const _TriCycleChip({
+    required this.baseLabel,
+    required this.option1,
+    required this.label1,
+    required this.option2,
+    required this.label2,
+    required this.current,
+    required this.onTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final isOption1 = current == option1;
+    final isOption2 = current == option2;
+    final selected = isOption1 || isOption2;
+    final displayLabel = isOption1 ? '$baseLabel $label1' : isOption2 ? '$baseLabel $label2' : baseLabel;
+
+    return FilterChip(
+      label: Text(displayLabel),
+      selected: selected,
+      onSelected: (_) {
+        if (!selected) {
+          onTap(option1);
+        } else if (isOption1) {
+          onTap(option2);
+        } else {
+          onTap(TriOption.aucun);
+        }
+      },
     );
   }
 }
