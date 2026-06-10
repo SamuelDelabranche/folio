@@ -10,16 +10,19 @@ class AppDatabase extends _$AppDatabase {
   AppDatabase() : super(_openConnection());
 
   @override
-  late final MangaDao mangaDao = MangaDao(this);
+  MangaDao get mangaDao => MangaDao(this);
 
   @override
-  int get schemaVersion => 2;
+  int get schemaVersion => 3;
 
   @override
   MigrationStrategy get migration => MigrationStrategy(
     onUpgrade: (m, from, to) async {
       if (from < 2) {
         await m.addColumn(mangaTable, mangaTable.genre);
+      }
+      if (from < 3) {
+        await m.addColumn(mangaTable, mangaTable.liens);
       }
     },
   );

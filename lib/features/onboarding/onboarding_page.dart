@@ -83,9 +83,9 @@ class _OnboardingPageState extends State<OnboardingPage> {
     await markOnboardingDone();
     if (!mounted) return;
     Navigator.of(context).pushReplacement(PageRouteBuilder(
-      pageBuilder: (_, __, ___) => const HomePage(),
+      pageBuilder: (_, _, _) => const HomePage(),
       transitionDuration: const Duration(milliseconds: 500),
-      transitionsBuilder: (_, anim, __, child) =>
+      transitionsBuilder: (_, anim, _, child) =>
           FadeTransition(opacity: anim, child: child),
     ));
   }
@@ -159,7 +159,7 @@ class _OnboardingPageState extends State<OnboardingPage> {
                       ),
                       boxShadow: [
                         BoxShadow(
-                          color: _slides[_current].color.withOpacity(0.4),
+                          color: _slides[_current].color.withValues(alpha:0.4),
                           blurRadius: 20,
                           offset: const Offset(0, 8),
                         ),
@@ -218,13 +218,13 @@ class _SlidePage extends StatelessWidget {
               shape: BoxShape.circle,
               gradient: RadialGradient(
                 colors: [
-                  slide.color.withOpacity(0.35),
-                  slide.color.withOpacity(0.05),
+                  slide.color.withValues(alpha:0.35),
+                  slide.color.withValues(alpha:0.05),
                 ],
               ),
               boxShadow: [
                 BoxShadow(
-                  color: slide.color.withOpacity(0.3),
+                  color: slide.color.withValues(alpha:0.3),
                   blurRadius: 60,
                   spreadRadius: 10,
                 ),
@@ -241,7 +241,7 @@ class _SlidePage extends StatelessWidget {
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 5),
             decoration: BoxDecoration(
-              color: slide.color.withOpacity(0.15),
+              color: slide.color.withValues(alpha:0.15),
               borderRadius: BorderRadius.circular(20),
             ),
             child: Text(

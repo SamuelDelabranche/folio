@@ -1,5 +1,6 @@
 import 'dart:io';
 import 'package:drift/drift.dart' hide Column;
+import 'package:flutter/services.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:folio/app/providers.dart';
@@ -7,6 +8,7 @@ import 'package:folio/app/constants.dart';
 import 'package:folio/app/theme.dart';
 import 'package:folio/data/database/app_database.dart';
 import 'package:folio/data/database/daos/manga_dao.dart';
+import 'package:folio/data/models/lien.dart';
 
 const List<Color> _pastelColors = [
   Color(0xFFFFB3BA),
@@ -31,6 +33,7 @@ class _MangaDetailPage extends ConsumerState<MangaDetailPage> {
   late bool _estFavori;
   bool _modeEdition = false;
   late List<String> _genreSelectionne;
+  late List<Lien> _liens;
   String _rechercheGenre = '';
   late String _titre;
   late double _noteEdition;
@@ -59,6 +62,7 @@ class _MangaDetailPage extends ConsumerState<MangaDetailPage> {
     _genreSelectionne = (widget.mangaData.genre ?? '').isEmpty
         ? []
         : widget.mangaData.genre!.split(',');
+    _liens = liensFromJson(widget.mangaData.liens);
   }
 
   @override
@@ -79,12 +83,74 @@ class _MangaDetailPage extends ConsumerState<MangaDetailPage> {
       status: _statutController,
       typeManga: _typeController,
       genre: Value(_genreSelectionne.join(',')),
+      liens: Value(liensToJson(_liens)),
     );
     await _dao.updateManga(mangaMisAJour);
     ref.invalidate(mangasProvider);
   }
 
   Color _couleurNote(double note) => Color.lerp(Colors.black, Colors.green, note / 10)!;
+
+  void _copierLien(String url) {
+    Clipboard.setData(ClipboardData(text: url));
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        backgroundColor: AppColors.success,
+        content: const Text('Lien copié', textAlign: TextAlign.center, style: TextStyle(color: Colors.black87)),
+        duration: const Duration(seconds: 2),
+      ),
+    );
+  }
+
+  void _ajouterLien() {
+    final nomController = TextEditingController();
+    final urlController = TextEditingController();
+    showDialog(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('Ajouter un lien'),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            TextField(
+              controller: nomController,
+              textCapitalization: TextCapitalization.sentences,
+              decoration: InputDecoration(
+                labelText: 'Nom',
+                hintText: 'ex: Scan VF',
+                border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+              ),
+            ),
+            const SizedBox(height: 12),
+            TextField(
+              controller: urlController,
+              keyboardType: TextInputType.url,
+              decoration: InputDecoration(
+                labelText: 'URL',
+                hintText: 'https://...',
+                border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+              ),
+            ),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx),
+            child: const Text('Annuler'),
+          ),
+          FilledButton(
+            onPressed: () {
+              if (nomController.text.isNotEmpty && urlController.text.isNotEmpty) {
+                setState(() => _liens.add(Lien(nom: nomController.text, url: urlController.text)));
+                Navigator.pop(ctx);
+              }
+            },
+            child: const Text('Ajouter'),
+          ),
+        ],
+      ),
+    );
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -345,7 +411,7 @@ class _MangaDetailPage extends ConsumerState<MangaDetailPage> {
                                   Container(
                                     padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
                                     decoration: BoxDecoration(
-                                      color: _couleurNote(_noteEdition).withOpacity(0.15),
+                                      color: _couleurNote(_noteEdition).withValues(alpha: 0.15),
                                       borderRadius: BorderRadius.circular(20),
                                     ),
                                     child: Text(
@@ -392,7 +458,7 @@ class _MangaDetailPage extends ConsumerState<MangaDetailPage> {
                                   trailing: Container(
                                     padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
                                     decoration: BoxDecoration(
-                                      color: _couleurNote(widget.mangaData.note).withOpacity(0.15),
+                                      color: _couleurNote(widget.mangaData.note).withValues(alpha: 0.15),
                                       borderRadius: BorderRadius.circular(20),
                                     ),
                                     child: Text(
@@ -404,6 +470,129 @@ class _MangaDetailPage extends ConsumerState<MangaDetailPage> {
                               ],
                             ),
                           ),
+                    const SizedBox(height: 20),
+
+                    // ── Liens ──
+                    _SectionLabel('Liens d\'accès'),
+                    _modeEdition
+                        ? Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              for (int i = 0; i < _liens.length; i++)
+                                Padding(
+                                  padding: const EdgeInsets.only(bottom: 8),
+                                  child: Row(
+                                    children: [
+                                      const Icon(Icons.link, size: 18, color: Colors.grey),
+                                      const SizedBox(width: 12),
+                                      Expanded(
+                                        child: Column(
+                                          crossAxisAlignment: CrossAxisAlignment.start,
+                                          children: [
+                                            Text(_liens[i].nom, style: const TextStyle(fontWeight: FontWeight.w500)),
+                                            Text(_liens[i].url, style: const TextStyle(fontSize: 11, color: Colors.grey), maxLines: 1, overflow: TextOverflow.ellipsis),
+                                          ],
+                                        ),
+                                      ),
+                                      Column(
+                                        mainAxisSize: MainAxisSize.min,
+                                        children: [
+                                          SizedBox(
+                                            height: 24,
+                                            width: 24,
+                                            child: IconButton(
+                                              padding: EdgeInsets.zero,
+                                              iconSize: 18,
+                                              icon: const Icon(Icons.keyboard_arrow_up),
+                                              onPressed: i > 0 ? () => setState(() {
+                                                final item = _liens.removeAt(i);
+                                                _liens.insert(i - 1, item);
+                                              }) : null,
+                                            ),
+                                          ),
+                                          SizedBox(
+                                            height: 24,
+                                            width: 24,
+                                            child: IconButton(
+                                              padding: EdgeInsets.zero,
+                                              iconSize: 18,
+                                              icon: const Icon(Icons.keyboard_arrow_down),
+                                              onPressed: i < _liens.length - 1 ? () => setState(() {
+                                                final item = _liens.removeAt(i);
+                                                _liens.insert(i + 1, item);
+                                              }) : null,
+                                            ),
+                                          ),
+                                        ],
+                                      ),
+                                      IconButton(
+                                        icon: Icon(Icons.delete_outline, color: AppColors.danger),
+                                        onPressed: () => setState(() => _liens.removeAt(i)),
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                              OutlinedButton.icon(
+                                onPressed: _ajouterLien,
+                                icon: const Icon(Icons.add),
+                                label: const Text('Ajouter un lien'),
+                                style: OutlinedButton.styleFrom(
+                                  minimumSize: const Size(double.infinity, 44),
+                                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                                ),
+                              ),
+                            ],
+                          )
+                        : _liens.isEmpty
+                            ? Card(
+                                margin: EdgeInsets.zero,
+                                child: const Padding(
+                                  padding: EdgeInsets.all(16),
+                                  child: Center(child: Text('Aucun lien renseigné')),
+                                ),
+                              )
+                            : Column(
+                                children: [
+                                  for (int i = 0; i < _liens.length; i++)
+                                    Padding(
+                                      padding: const EdgeInsets.only(bottom: 8),
+                                      child: InkWell(
+                                        onTap: () => _copierLien(_liens[i].url),
+                                        borderRadius: BorderRadius.circular(12),
+                                        child: Card(
+                                          margin: EdgeInsets.zero,
+                                          child: Padding(
+                                            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                                            child: Row(
+                                              children: [
+                                                Container(
+                                                  width: 36,
+                                                  height: 36,
+                                                  decoration: BoxDecoration(
+                                                    color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.12),
+                                                    borderRadius: BorderRadius.circular(8),
+                                                  ),
+                                                  child: Icon(Icons.link, size: 18, color: Theme.of(context).colorScheme.primary),
+                                                ),
+                                                const SizedBox(width: 12),
+                                                Expanded(
+                                                  child: Column(
+                                                    crossAxisAlignment: CrossAxisAlignment.start,
+                                                    children: [
+                                                      Text(_liens[i].nom, style: const TextStyle(fontWeight: FontWeight.w600)),
+                                                      const SizedBox(height: 2),
+                                                      Text(_liens[i].url, style: TextStyle(fontSize: 11, color: Colors.grey.shade500), maxLines: 1, overflow: TextOverflow.ellipsis),
+                                                    ],
+                                                  ),
+                                                ),
+                                              ],
+                                            ),
+                                          ),
+                                        ),
+                                      ),
+                                    ),
+                                ],
+                              ),
                     const SizedBox(height: 24),
                   ],
                 ),

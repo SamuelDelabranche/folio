@@ -14,4 +14,6 @@ class MangaTable extends Table{
 
   RealColumn get note => real()();
   RealColumn get chapitres => real()();
+
+  TextColumn get liens => text().nullable()();
 }

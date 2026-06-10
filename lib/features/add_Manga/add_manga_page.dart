@@ -4,6 +4,7 @@ import 'package:folio/app/providers.dart';
 import 'package:folio/data/database/app_database.dart';
 import 'package:drift/drift.dart' hide Column;
 import 'package:folio/app/constants.dart';
+import 'package:folio/data/models/lien.dart';
 
 class AddMangaPage extends ConsumerStatefulWidget {
   const AddMangaPage({super.key});
@@ -21,6 +22,7 @@ class _AddMangaPageState extends ConsumerState<AddMangaPage> {
   String _statusSelectionne = 'En cours';
   String _typeSelectionne = 'Manga';
   final List<String> _genreSelectionne = [];
+  final List<Lien> _liens = [];
   bool _estFavori = false;
   double _note = 5.0;
 
@@ -30,6 +32,56 @@ class _AddMangaPageState extends ConsumerState<AddMangaPage> {
     _chapitreController.dispose();
     _rechercheController.dispose();
     super.dispose();
+  }
+
+  void _ajouterLien() {
+    final nomController = TextEditingController();
+    final urlController = TextEditingController();
+    showDialog(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('Ajouter un lien'),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            TextField(
+              controller: nomController,
+              textCapitalization: TextCapitalization.sentences,
+              decoration: InputDecoration(
+                labelText: 'Nom',
+                hintText: 'ex: Scan VF',
+                border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+              ),
+            ),
+            const SizedBox(height: 12),
+            TextField(
+              controller: urlController,
+              keyboardType: TextInputType.url,
+              decoration: InputDecoration(
+                labelText: 'URL',
+                hintText: 'https://...',
+                border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+              ),
+            ),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx),
+            child: const Text('Annuler'),
+          ),
+          FilledButton(
+            onPressed: () {
+              if (nomController.text.isNotEmpty && urlController.text.isNotEmpty) {
+                setState(() => _liens.add(Lien(nom: nomController.text, url: urlController.text)));
+                Navigator.pop(ctx);
+              }
+            },
+            child: const Text('Ajouter'),
+          ),
+        ],
+      ),
+    );
   }
 
   InputDecoration _inputDecoration(String label, {IconData? icon}) {
@@ -78,7 +130,7 @@ class _AddMangaPageState extends ConsumerState<AddMangaPage> {
                   Container(
                     padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
                     decoration: BoxDecoration(
-                      color: Color.lerp(Colors.black, Colors.green, _note / 10)!.withOpacity(0.15),
+                      color: Color.lerp(Colors.black, Colors.green, _note / 10)!.withValues(alpha: 0.15),
                       borderRadius: BorderRadius.circular(20),
                     ),
                     child: Text(
@@ -194,6 +246,48 @@ class _AddMangaPageState extends ConsumerState<AddMangaPage> {
               ),
               const SizedBox(height: 24),
 
+              // ── Liens ──
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Text(
+                    _liens.isEmpty ? 'Liens d\'accès' : 'Liens d\'accès (${_liens.length})',
+                    style: const TextStyle(fontWeight: FontWeight.w500),
+                  ),
+                  TextButton.icon(
+                    onPressed: _ajouterLien,
+                    icon: const Icon(Icons.add, size: 18),
+                    label: const Text('Ajouter'),
+                  ),
+                ],
+              ),
+              if (_liens.isNotEmpty) ...[
+                const SizedBox(height: 4),
+                ...List.generate(_liens.length, (i) => Padding(
+                  padding: const EdgeInsets.only(bottom: 6),
+                  child: Row(
+                    children: [
+                      const Icon(Icons.link, size: 16, color: Colors.grey),
+                      const SizedBox(width: 8),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(_liens[i].nom, style: const TextStyle(fontWeight: FontWeight.w500, fontSize: 13)),
+                            Text(_liens[i].url, style: const TextStyle(fontSize: 11, color: Colors.grey), maxLines: 1, overflow: TextOverflow.ellipsis),
+                          ],
+                        ),
+                      ),
+                      IconButton(
+                        icon: const Icon(Icons.close, size: 18),
+                        onPressed: () => setState(() => _liens.removeAt(i)),
+                      ),
+                    ],
+                  ),
+                )),
+              ],
+              const SizedBox(height: 16),
+
               // ── Bouton ──
               FilledButton.icon(
                 style: FilledButton.styleFrom(
@@ -215,6 +309,7 @@ class _AddMangaPageState extends ConsumerState<AddMangaPage> {
                         note: Value(_note),
                         chapitres: Value(double.parse(_chapitreController.text)),
                         genre: Value(_genreSelectionne.join(',')),
+                        liens: Value(liensToJson(_liens)),
                       ),
                     );
                     Navigator.pop(context);

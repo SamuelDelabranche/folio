@@ -57,6 +57,7 @@ class _SettingsPage extends ConsumerState<SettingsPage> {
         'estFavori': manga.estFavori,
         'note': manga.note,
         'chapitres': manga.chapitres,
+        'liens': manga.liens,
       }).toList();
 
       final dossier = await getTemporaryDirectory();
@@ -165,6 +166,7 @@ class _SettingsPage extends ConsumerState<SettingsPage> {
                     estFavori: Value(item['estFavori'] as bool),
                     note: Value((item['note'] as num).toDouble()),
                     chapitres: Value((item['chapitres'] as num).toDouble()),
+                    liens: Value(item['liens'] as String?),
                   ));
                 }
                 ref.invalidate(mangasProvider);

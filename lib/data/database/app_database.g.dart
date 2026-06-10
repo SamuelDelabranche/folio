@@ -116,6 +116,15 @@ class $MangaTableTable extends MangaTable
     type: DriftSqlType.double,
     requiredDuringInsert: true,
   );
+  static const VerificationMeta _liensMeta = const VerificationMeta('liens');
+  @override
+  late final GeneratedColumn<String> liens = GeneratedColumn<String>(
+    'liens',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
   @override
   List<GeneratedColumn> get $columns => [
     id,
@@ -128,6 +137,7 @@ class $MangaTableTable extends MangaTable
     estFavori,
     note,
     chapitres,
+    liens,
   ];
   @override
   String get aliasedName => _alias ?? actualTableName;
@@ -213,6 +223,12 @@ class $MangaTableTable extends MangaTable
     } else if (isInserting) {
       context.missing(_chapitresMeta);
     }
+    if (data.containsKey('liens')) {
+      context.handle(
+        _liensMeta,
+        liens.isAcceptableOrUnknown(data['liens']!, _liensMeta),
+      );
+    }
     return context;
   }
 
@@ -262,6 +278,10 @@ class $MangaTableTable extends MangaTable
         DriftSqlType.double,
         data['${effectivePrefix}chapitres'],
       )!,
+      liens: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}liens'],
+      ),
     );
   }
 
@@ -282,6 +302,7 @@ class MangaTableData extends DataClass implements Insertable<MangaTableData> {
   final bool estFavori;
   final double note;
   final double chapitres;
+  final String? liens;
   const MangaTableData({
     required this.id,
     required this.titre,
@@ -293,6 +314,7 @@ class MangaTableData extends DataClass implements Insertable<MangaTableData> {
     required this.estFavori,
     required this.note,
     required this.chapitres,
+    this.liens,
   });
   @override
   Map<String, Expression> toColumns(bool nullToAbsent) {
@@ -313,6 +335,9 @@ class MangaTableData extends DataClass implements Insertable<MangaTableData> {
     map['est_favori'] = Variable<bool>(estFavori);
     map['note'] = Variable<double>(note);
     map['chapitres'] = Variable<double>(chapitres);
+    if (!nullToAbsent || liens != null) {
+      map['liens'] = Variable<String>(liens);
+    }
     return map;
   }
 
@@ -334,6 +359,9 @@ class MangaTableData extends DataClass implements Insertable<MangaTableData> {
       estFavori: Value(estFavori),
       note: Value(note),
       chapitres: Value(chapitres),
+      liens: liens == null && nullToAbsent
+          ? const Value.absent()
+          : Value(liens),
     );
   }
 
@@ -353,6 +381,7 @@ class MangaTableData extends DataClass implements Insertable<MangaTableData> {
       estFavori: serializer.fromJson<bool>(json['estFavori']),
       note: serializer.fromJson<double>(json['note']),
       chapitres: serializer.fromJson<double>(json['chapitres']),
+      liens: serializer.fromJson<String?>(json['liens']),
     );
   }
   @override
@@ -369,6 +398,7 @@ class MangaTableData extends DataClass implements Insertable<MangaTableData> {
       'estFavori': serializer.toJson<bool>(estFavori),
       'note': serializer.toJson<double>(note),
       'chapitres': serializer.toJson<double>(chapitres),
+      'liens': serializer.toJson<String?>(liens),
     };
   }
 
@@ -383,6 +413,7 @@ class MangaTableData extends DataClass implements Insertable<MangaTableData> {
     bool? estFavori,
     double? note,
     double? chapitres,
+    Value<String?> liens = const Value.absent(),
   }) => MangaTableData(
     id: id ?? this.id,
     titre: titre ?? this.titre,
@@ -394,6 +425,7 @@ class MangaTableData extends DataClass implements Insertable<MangaTableData> {
     estFavori: estFavori ?? this.estFavori,
     note: note ?? this.note,
     chapitres: chapitres ?? this.chapitres,
+    liens: liens.present ? liens.value : this.liens,
   );
   MangaTableData copyWithCompanion(MangaTableCompanion data) {
     return MangaTableData(
@@ -409,6 +441,7 @@ class MangaTableData extends DataClass implements Insertable<MangaTableData> {
       estFavori: data.estFavori.present ? data.estFavori.value : this.estFavori,
       note: data.note.present ? data.note.value : this.note,
       chapitres: data.chapitres.present ? data.chapitres.value : this.chapitres,
+      liens: data.liens.present ? data.liens.value : this.liens,
     );
   }
 
@@ -424,7 +457,8 @@ class MangaTableData extends DataClass implements Insertable<MangaTableData> {
           ..write('typeManga: $typeManga, ')
           ..write('estFavori: $estFavori, ')
           ..write('note: $note, ')
-          ..write('chapitres: $chapitres')
+          ..write('chapitres: $chapitres, ')
+          ..write('liens: $liens')
           ..write(')'))
         .toString();
   }
@@ -441,6 +475,7 @@ class MangaTableData extends DataClass implements Insertable<MangaTableData> {
     estFavori,
     note,
     chapitres,
+    liens,
   );
   @override
   bool operator ==(Object other) =>
@@ -455,7 +490,8 @@ class MangaTableData extends DataClass implements Insertable<MangaTableData> {
           other.typeManga == this.typeManga &&
           other.estFavori == this.estFavori &&
           other.note == this.note &&
-          other.chapitres == this.chapitres);
+          other.chapitres == this.chapitres &&
+          other.liens == this.liens);
 }
 
 class MangaTableCompanion extends UpdateCompanion<MangaTableData> {
@@ -469,6 +505,7 @@ class MangaTableCompanion extends UpdateCompanion<MangaTableData> {
   final Value<bool> estFavori;
   final Value<double> note;
   final Value<double> chapitres;
+  final Value<String?> liens;
   const MangaTableCompanion({
     this.id = const Value.absent(),
     this.titre = const Value.absent(),
@@ -480,6 +517,7 @@ class MangaTableCompanion extends UpdateCompanion<MangaTableData> {
     this.estFavori = const Value.absent(),
     this.note = const Value.absent(),
     this.chapitres = const Value.absent(),
+    this.liens = const Value.absent(),
   });
   MangaTableCompanion.insert({
     this.id = const Value.absent(),
@@ -492,6 +530,7 @@ class MangaTableCompanion extends UpdateCompanion<MangaTableData> {
     required bool estFavori,
     required double note,
     required double chapitres,
+    this.liens = const Value.absent(),
   }) : titre = Value(titre),
        status = Value(status),
        typeManga = Value(typeManga),
@@ -509,6 +548,7 @@ class MangaTableCompanion extends UpdateCompanion<MangaTableData> {
     Expression<bool>? estFavori,
     Expression<double>? note,
     Expression<double>? chapitres,
+    Expression<String>? liens,
   }) {
     return RawValuesInsertable({
       if (id != null) 'id': id,
@@ -521,6 +561,7 @@ class MangaTableCompanion extends UpdateCompanion<MangaTableData> {
       if (estFavori != null) 'est_favori': estFavori,
       if (note != null) 'note': note,
       if (chapitres != null) 'chapitres': chapitres,
+      if (liens != null) 'liens': liens,
     });
   }
 
@@ -535,6 +576,7 @@ class MangaTableCompanion extends UpdateCompanion<MangaTableData> {
     Value<bool>? estFavori,
     Value<double>? note,
     Value<double>? chapitres,
+    Value<String?>? liens,
   }) {
     return MangaTableCompanion(
       id: id ?? this.id,
@@ -547,6 +589,7 @@ class MangaTableCompanion extends UpdateCompanion<MangaTableData> {
       estFavori: estFavori ?? this.estFavori,
       note: note ?? this.note,
       chapitres: chapitres ?? this.chapitres,
+      liens: liens ?? this.liens,
     );
   }
 
@@ -583,6 +626,9 @@ class MangaTableCompanion extends UpdateCompanion<MangaTableData> {
     if (chapitres.present) {
       map['chapitres'] = Variable<double>(chapitres.value);
     }
+    if (liens.present) {
+      map['liens'] = Variable<String>(liens.value);
+    }
     return map;
   }
 
@@ -598,7 +644,8 @@ class MangaTableCompanion extends UpdateCompanion<MangaTableData> {
           ..write('typeManga: $typeManga, ')
           ..write('estFavori: $estFavori, ')
           ..write('note: $note, ')
-          ..write('chapitres: $chapitres')
+          ..write('chapitres: $chapitres, ')
+          ..write('liens: $liens')
           ..write(')'))
         .toString();
   }
@@ -628,6 +675,7 @@ typedef $$MangaTableTableCreateCompanionBuilder =
       required bool estFavori,
       required double note,
       required double chapitres,
+      Value<String?> liens,
     });
 typedef $$MangaTableTableUpdateCompanionBuilder =
     MangaTableCompanion Function({
@@ -641,6 +689,7 @@ typedef $$MangaTableTableUpdateCompanionBuilder =
       Value<bool> estFavori,
       Value<double> note,
       Value<double> chapitres,
+      Value<String?> liens,
     });
 
 class $$MangaTableTableFilterComposer
@@ -699,6 +748,11 @@ class $$MangaTableTableFilterComposer
 
   ColumnFilters<double> get chapitres => $composableBuilder(
     column: $table.chapitres,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get liens => $composableBuilder(
+    column: $table.liens,
     builder: (column) => ColumnFilters(column),
   );
 }
@@ -761,6 +815,11 @@ class $$MangaTableTableOrderingComposer
     column: $table.chapitres,
     builder: (column) => ColumnOrderings(column),
   );
+
+  ColumnOrderings<String> get liens => $composableBuilder(
+    column: $table.liens,
+    builder: (column) => ColumnOrderings(column),
+  );
 }
 
 class $$MangaTableTableAnnotationComposer
@@ -803,6 +862,9 @@ class $$MangaTableTableAnnotationComposer
 
   GeneratedColumn<double> get chapitres =>
       $composableBuilder(column: $table.chapitres, builder: (column) => column);
+
+  GeneratedColumn<String> get liens =>
+      $composableBuilder(column: $table.liens, builder: (column) => column);
 }
 
 class $$MangaTableTableTableManager
@@ -846,6 +908,7 @@ class $$MangaTableTableTableManager
                 Value<bool> estFavori = const Value.absent(),
                 Value<double> note = const Value.absent(),
                 Value<double> chapitres = const Value.absent(),
+                Value<String?> liens = const Value.absent(),
               }) => MangaTableCompanion(
                 id: id,
                 titre: titre,
@@ -857,6 +920,7 @@ class $$MangaTableTableTableManager
                 estFavori: estFavori,
                 note: note,
                 chapitres: chapitres,
+                liens: liens,
               ),
           createCompanionCallback:
               ({
@@ -870,6 +934,7 @@ class $$MangaTableTableTableManager
                 required bool estFavori,
                 required double note,
                 required double chapitres,
+                Value<String?> liens = const Value.absent(),
               }) => MangaTableCompanion.insert(
                 id: id,
                 titre: titre,
@@ -881,6 +946,7 @@ class $$MangaTableTableTableManager
                 estFavori: estFavori,
                 note: note,
                 chapitres: chapitres,
+                liens: liens,
               ),
           withReferenceMapper: (p0) => p0
               .map((e) => (e.readTable(table), BaseReferences(db, table, e)))

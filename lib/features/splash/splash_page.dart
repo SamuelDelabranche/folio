@@ -104,10 +104,10 @@ class _SplashPageState extends State<SplashPage> with TickerProviderStateMixin {
     final firstLaunch = await isFirstLaunch();
     if (!mounted) return;
     Navigator.of(context).pushReplacement(PageRouteBuilder(
-      pageBuilder: (_, __, ___) =>
+      pageBuilder: (_, _, _) =>
           firstLaunch ? const OnboardingPage() : const HomePage(),
       transitionDuration: const Duration(milliseconds: 500),
-      transitionsBuilder: (_, anim, __, child) =>
+      transitionsBuilder: (_, anim, _, child) =>
           FadeTransition(opacity: anim, child: child),
     ));
   }
@@ -151,7 +151,7 @@ class _SplashPageState extends State<SplashPage> with TickerProviderStateMixin {
             RepaintBoundary(
               child: AnimatedBuilder(
                 animation: _particleController,
-                builder: (_, __) => CustomPaint(
+                builder: (_, _) => CustomPaint(
                   painter: _ParticlePainter(_particles, _particleController.value),
                   size: MediaQuery.of(context).size,
                 ),
@@ -162,7 +162,7 @@ class _SplashPageState extends State<SplashPage> with TickerProviderStateMixin {
             Center(
               child: AnimatedBuilder(
                 animation: _introController,
-                builder: (_, __) => Column(
+                builder: (_, _) => Column(
                   mainAxisSize: MainAxisSize.min,
                   children: [
 
@@ -178,7 +178,7 @@ class _SplashPageState extends State<SplashPage> with TickerProviderStateMixin {
                             shape: BoxShape.circle,
                             boxShadow: [
                               BoxShadow(
-                                color: Color(0xFFBB86FC).withOpacity(_glowRadius.value * 0.6),
+                                color: Color(0xFFBB86FC).withValues(alpha:_glowRadius.value * 0.6),
                                 blurRadius: 90,
                                 spreadRadius: 30,
                               ),
@@ -299,7 +299,7 @@ class _ParticlePainter extends CustomPainter {
             const Color(0xFFBB86FC),
             const Color(0xFFE91E8C),
             p.phase,
-          )!.withOpacity(opacity)
+          )!.withValues(alpha:opacity)
           ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 2.5),
       );
     }
