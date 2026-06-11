@@ -1,9 +1,7 @@
-import 'dart:async';
-
-import 'package:connectivity_plus/connectivity_plus.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import 'package:folio/app/providers.dart';
+import 'package:folio/data/database/app_database.dart';
 import 'package:folio/services/anilist/anilist_client.dart';
 import 'package:folio/services/anilist/sync_service.dart';
 
@@ -17,23 +15,14 @@ class SyncEnCoursNotifier extends Notifier<bool> {
   void set(bool valeur) => state = valeur;
 }
 
-final syncEngineProvider = Provider<SyncEngine>((ref) {
-  final engine = SyncEngine(ref);
-  ref.onDispose(engine.dispose);
-  return engine;
-});
+final syncEngineProvider = Provider<SyncEngine>((ref) => SyncEngine(ref));
 
 class SyncEngine {
   static const intervalleRequetes = Duration(milliseconds: 2500);
-  static const fraicheur = Duration(hours: 24);
-  static const debounce = Duration(minutes: 15);
 
   final Ref _ref;
-  StreamSubscription<List<ConnectivityResult>>? _aboConnectivite;
-  bool _etaitHorsLigne = false;
   bool _enCours = false;
   bool _arretDemande = false;
-  DateTime? _dernierePasse;
 
   SyncEngine(this._ref);
 
@@ -50,40 +39,17 @@ class SyncEngine {
     }
   }
 
-  void demarrer() {
-    _aboConnectivite ??= Connectivity().onConnectivityChanged.listen((etats) {
-      final horsLigne =
-          etats.isEmpty || etats.every((e) => e == ConnectivityResult.none);
-      if (_etaitHorsLigne && !horsLigne) runAll();
-      _etaitHorsLigne = horsLigne;
-    });
-    runAll();
-  }
-
-  Future<void> runAll({bool force = false}) async {
+  Future<void> _passe(bool Function(MangaTableData manga) filtre) async {
     if (_enCours) return;
     if (!_ref.read(syncPrefsProvider).maitre) return;
-    final maintenant = DateTime.now();
-    if (!force &&
-        _dernierePasse != null &&
-        maintenant.difference(_dernierePasse!) < debounce) {
-      return;
-    }
-
     _enCours = true;
     _arretDemande = false;
-    _dernierePasse = maintenant;
     _ref.read(syncEnCoursProvider.notifier).set(true);
     try {
       final dao = _ref.read(mangaDaoProvider);
       final service = _ref.read(syncServiceProvider);
       final tous = await dao.getAllMangas();
-      final candidats = tous
-          .where((m) =>
-              force ||
-              m.lastSyncedAt == null ||
-              maintenant.difference(m.lastSyncedAt!) >= fraicheur)
-          .toList()
+      final candidats = tous.where(filtre).toList()
         ..sort((a, b) {
           if (a.lastSyncedAt == null && b.lastSyncedAt == null) return 0;
           if (a.lastSyncedAt == null) return -1;
@@ -119,41 +85,9 @@ class SyncEngine {
     }
   }
 
-  Future<void> lierTout() async {
-    if (_enCours) return;
-    if (!_ref.read(syncPrefsProvider).maitre) return;
-    _enCours = true;
-    _arretDemande = false;
-    _ref.read(syncEnCoursProvider.notifier).set(true);
-    try {
-      final dao = _ref.read(mangaDaoProvider);
-      final service = _ref.read(syncServiceProvider);
-      final nonLies = (await dao.getAllMangas())
-          .where((m) => m.anilistId == null)
-          .toList();
-      for (final manga in nonLies) {
-        if (!_doitContinuer) break;
-        try {
-          if (!await service.lierAuto(manga)) continue;
-          await _attendre(intervalleRequetes);
-          if (!_doitContinuer) break;
-          final relu = await dao.getManga(manga.id);
-          if (relu == null || relu.anilistId == null) continue;
-          await service.syncOne(relu);
-        } on AnilistRateLimitException catch (e) {
-          await _attendre(e.retryAfter);
-        } on AnilistNetworkException {
-          break;
-        } catch (_) {
-          break;
-        }
-        await _attendre(intervalleRequetes);
-      }
-    } finally {
-      _enCours = false;
-      _ref.read(syncEnCoursProvider.notifier).set(false);
-    }
-  }
+  Future<void> toutSynchroniser() => _passe((_) => true);
+
+  Future<void> lierTout() => _passe((m) => m.anilistId == null);
 
   Future<void> syncManga(int id) async {
     if (_enCours) return;
@@ -179,9 +113,5 @@ class SyncEngine {
       _enCours = false;
       _ref.read(syncEnCoursProvider.notifier).set(false);
     }
-  }
-
-  void dispose() {
-    _aboConnectivite?.cancel();
   }
 }

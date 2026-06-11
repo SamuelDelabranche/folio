@@ -293,27 +293,27 @@ class _SettingsPage extends ConsumerState<SettingsPage> {
     );
   }
 
-  Future<void> _toutResynchroniser() async {
+  Future<void> _toutSynchroniser() async {
     final messenger = ScaffoldMessenger.of(context);
     final mangas = await _dao.getAllMangas();
-    final lies = mangas.where((m) => m.anilistId != null).length;
+    final total = mangas.length;
     if (!mounted) return;
-    if (lies == 0) {
+    if (total == 0) {
       messenger.showSnackBar(SnackBar(
         backgroundColor: AppColors.info,
-        content: const Text('Aucun manga lié à AniList', textAlign: TextAlign.center, style: TextStyle(color: Colors.black87)),
+        content: const Text('La bibliothèque est vide', textAlign: TextAlign.center, style: TextStyle(color: Colors.black87)),
       ));
       return;
     }
-    final secondes = (lies * 2.5).ceil();
+    final secondes = (total * 5).ceil();
     final estimation = secondes < 60 ? '$secondes s' : '${(secondes / 60).ceil()} min';
     showDialog(
       context: context,
       builder: (dialogContext) => AlertDialog(
         icon: const Icon(Icons.sync, size: 44),
-        title: const Text('Tout resynchroniser ?'),
+        title: const Text('Tout synchroniser ?'),
         content: Text(
-          '$lies manga(s) lié(s) — environ $estimation.\n\nLa synchronisation tournera en arrière-plan, tu peux continuer à utiliser l\'application.',
+          '$total manga(s) — environ $estimation.\n\nLes mangas non liés seront d\'abord liés à AniList. La synchronisation tournera en arrière-plan, tu peux continuer à utiliser l\'application.',
           textAlign: TextAlign.center,
         ),
         actions: [
@@ -324,7 +324,7 @@ class _SettingsPage extends ConsumerState<SettingsPage> {
           FilledButton(
             onPressed: () {
               Navigator.pop(dialogContext);
-              ref.read(syncEngineProvider).runAll(force: true);
+              ref.read(syncEngineProvider).toutSynchroniser();
             },
             child: const Text('Lancer'),
           ),
@@ -536,7 +536,7 @@ class _SettingsPage extends ConsumerState<SettingsPage> {
                       SwitchListTile(
                         secondary: const Icon(Icons.sync_outlined),
                         title: const Text('Synchronisation AniList'),
-                        subtitle: const Text('Enrichit les fiches liées en arrière-plan'),
+                        subtitle: const Text('Uniquement à la demande, jamais automatique'),
                         value: sync.maitre,
                         onChanged: (v) {
                           notifier.setMaitre(v);
@@ -600,9 +600,9 @@ class _SettingsPage extends ConsumerState<SettingsPage> {
                               _SettingsTile(
                                 icon: Icons.sync,
                                 iconColor: AppColors.primary,
-                                title: 'Tout resynchroniser',
-                                subtitle: 'Met à jour tous les mangas liés maintenant',
-                                onTap: sync.maitre ? _toutResynchroniser : null,
+                                title: 'Tout synchroniser',
+                                subtitle: 'Lie et met à jour toute la bibliothèque',
+                                onTap: sync.maitre ? _toutSynchroniser : null,
                               ),
                             ],
                           );

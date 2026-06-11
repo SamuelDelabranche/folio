@@ -138,8 +138,20 @@ class _MangaDetailPage extends ConsumerState<MangaDetailPage> {
     final messenger = ScaffoldMessenger.of(context);
     setState(() => _syncEnCours = true);
     try {
-      final actuel = await _dao.getManga(widget.mangaData.id);
+      var actuel = await _dao.getManga(widget.mangaData.id);
       if (actuel == null) return;
+      if (actuel.anilistId == null) {
+        final lie = await ref.read(syncServiceProvider).lierAuto(actuel);
+        if (!lie) {
+          messenger.showSnackBar(SnackBar(
+            backgroundColor: AppColors.info,
+            content: const Text('Aucune fiche AniList trouvée pour ce titre', textAlign: TextAlign.center, style: TextStyle(color: Colors.black87)),
+          ));
+          return;
+        }
+        actuel = await _dao.getManga(widget.mangaData.id);
+        if (actuel == null || actuel.anilistId == null) return;
+      }
       await ref.read(syncServiceProvider).syncOne(actuel);
       final frais = await _dao.getManga(widget.mangaData.id);
       if (!mounted || frais == null) return;
@@ -149,6 +161,7 @@ class _MangaDetailPage extends ConsumerState<MangaDetailPage> {
         _typeController = frais.typeManga;
         _imagePath = frais.imagePath;
         _imageSource = frais.imageSource;
+        _anilistId = frais.anilistId;
         _lastSyncedAt = frais.lastSyncedAt;
       });
       messenger.showSnackBar(SnackBar(
@@ -316,6 +329,17 @@ class _MangaDetailPage extends ConsumerState<MangaDetailPage> {
         appBar: AppBar(
           title: Text(_titre),
           actions: [
+            IconButton(
+              onPressed: _syncEnCours ? null : _synchroniserMaintenant,
+              tooltip: 'Synchroniser',
+              icon: _syncEnCours
+                  ? const SizedBox(
+                      width: 18,
+                      height: 18,
+                      child: CircularProgressIndicator(strokeWidth: 2),
+                    )
+                  : const Icon(Icons.sync),
+            ),
             IconButton(
               onPressed: () async {
                 setState(() => _estFavori = !_estFavori);
