@@ -275,7 +275,6 @@ class _AddMangaPageState extends ConsumerState<AddMangaPage> {
                       ),
                     );
                     Navigator.pop(context);
-                    ref.invalidate(mangasProvider);
                   }
                 },
                 icon: const Icon(Icons.check),

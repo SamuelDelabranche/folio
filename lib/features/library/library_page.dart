@@ -389,7 +389,6 @@ class _LibraryPage extends ConsumerState<LibraryPage> {
                     onPressed: () async {
                       final dao = ref.read(mangaDaoProvider);
                       await dao.deleteMangas(_mangaSelectionne.map((m) => m.id).toList());
-                      ref.invalidate(mangasProvider);
                       setState(() {
                         _mangaSelectionne.clear();
                         _modeSelection = false;

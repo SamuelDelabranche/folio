@@ -6,9 +6,12 @@ import 'package:shared_preferences/shared_preferences.dart';
 
 final databaseProvider = Provider<AppDatabase>((ref) => AppDatabase());
 final mangaDaoProvider = Provider<MangaDao>((ref) => MangaDao(ref.read(databaseProvider)));
-final mangasProvider = FutureProvider<List<MangaTableData>>((ref) {
+/// Flux réactif sur la table des mangas : toute écriture en base (ajout,
+/// édition, import, synchro d'arrière-plan) met l'UI à jour sans
+/// `ref.invalidate`.
+final mangasProvider = StreamProvider<List<MangaTableData>>((ref) {
   final dao = ref.read(mangaDaoProvider);
-  return dao.getAllMangas();
+  return dao.watchAllMangas();
 });
 
 final themeModeProvider = NotifierProvider<ThemeModeNotifier, ThemeMode>(ThemeModeNotifier.new);

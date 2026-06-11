@@ -10,6 +10,10 @@ class MangaDao extends DatabaseAccessor<AppDatabase> with _$MangaDaoMixin {
 
   Future<List<MangaTableData>> getAllMangas() => select(mangaTable).get();
 
+  /// Flux réactif : émet la liste complète à chaque écriture en base.
+  /// C'est lui qui permet à l'UI de suivre les synchros d'arrière-plan.
+  Stream<List<MangaTableData>> watchAllMangas() => select(mangaTable).watch();
+
   Future<int> insertManga(MangaTableCompanion manga) =>
       into(mangaTable).insert(manga);
 

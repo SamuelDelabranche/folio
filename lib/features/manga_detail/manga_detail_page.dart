@@ -78,7 +78,6 @@ class _MangaDetailPage extends ConsumerState<MangaDetailPage> {
       liens: Value(liensToJson(_liens)),
     );
     await _dao.updateManga(mangaMisAJour);
-    ref.invalidate(mangasProvider);
   }
 
   void _copierLien(String url) {
@@ -105,7 +104,6 @@ class _MangaDetailPage extends ConsumerState<MangaDetailPage> {
       widget.mangaData.id,
       MangaTableCompanion(chapitres: Value(nouveau)),
     );
-    ref.invalidate(mangasProvider);
     setState(() {
       _chapitresController.text =
           nouveau % 1 == 0 ? nouveau.toInt().toString() : nouveau.toString();
@@ -134,7 +132,6 @@ class _MangaDetailPage extends ConsumerState<MangaDetailPage> {
                   widget.mangaData.id,
                   MangaTableCompanion(estFavori: Value(_estFavori)),
                 );
-                ref.invalidate(mangasProvider);
               },
               icon: Icon(
                 _estFavori ? Icons.favorite : Icons.favorite_border,
@@ -179,7 +176,6 @@ class _MangaDetailPage extends ConsumerState<MangaDetailPage> {
                         style: TextButton.styleFrom(foregroundColor: AppColors.danger),
                         onPressed: () async {
                           await _dao.deleteManga(widget.mangaData.id);
-                          ref.invalidate(mangasProvider);
                           messenger.showSnackBar(SnackBar(
                             backgroundColor: AppColors.success,
                             content: const Text('Manga supprimé', textAlign: TextAlign.center, style: TextStyle(color: Colors.black87)),

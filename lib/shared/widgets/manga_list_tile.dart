@@ -25,7 +25,6 @@ class MangaListTile extends ConsumerWidget {
       mangaData.id,
       MangaTableCompanion(chapitres: Value(mangaData.chapitres + 1)),
     );
-    ref.invalidate(mangasProvider);
   }
 
   @override

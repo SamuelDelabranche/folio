@@ -231,7 +231,6 @@ class _SettingsPage extends ConsumerState<SettingsPage> {
               final messenger = ScaffoldMessenger.of(context);
               Navigator.pop(dialogContext);
               await _dao.deleteAllMangas();
-              ref.invalidate(mangasProvider);
               messenger.showSnackBar(SnackBar(
                 backgroundColor: AppColors.success,
                 content: const Text('Bibliothèque effacée', textAlign: TextAlign.center, style: TextStyle(color: Colors.black87)),
@@ -325,7 +324,6 @@ class _SettingsPage extends ConsumerState<SettingsPage> {
                     listeJson.map((item) => _companionDepuisJson(item)).toList();
 
                 await _dao.replaceAllMangas(companions);
-                ref.invalidate(mangasProvider);
                 messenger.showSnackBar(SnackBar(
                   backgroundColor: AppColors.success,
                   content: Text('${companions.length} manga(s) importé(s)', textAlign: TextAlign.center, style: const TextStyle(color: Colors.black87)),
