@@ -1,26 +1,16 @@
 import 'package:flutter/material.dart';
+import 'package:folio/app/theme.dart';
 import 'package:folio/data/database/app_database.dart';
-
-const List<Color> _pastelColors = [
-  Color(0xFFFFB3BA),
-  Color(0xFFFFDFBA),
-  Color(0xFFFFFFBA),
-  Color(0xFFBAFFBA),
-  Color(0xFFBAE1FF),
-  Color(0xFFD4BAFF),
-];
 
 class MangaCard extends StatelessWidget {
   final MangaTableData mangaData;
 
   const MangaCard({super.key, required this.mangaData});
 
-  Color _couleurNote(double note) {
-    return Color.lerp(Colors.black, Colors.green, note / 10)!;
-  }
-
   @override
   Widget build(BuildContext context) {
+    final couleurStatut = AppColors.couleurStatut(mangaData.status);
+
     return Card(
       clipBehavior: Clip.antiAlias,
       child: Column(
@@ -30,9 +20,28 @@ class MangaCard extends StatelessWidget {
             child: Stack(
               children: [
                 Container(
-                  color: _pastelColors[mangaData.id % _pastelColors.length],
+                  color: AppColors.pastels[mangaData.id % AppColors.pastels.length],
                   width: double.infinity,
                   height: double.infinity,
+                ),
+                Positioned(
+                  top: 8,
+                  left: 8,
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                    decoration: BoxDecoration(
+                      color: couleurStatut,
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                    child: Text(
+                      mangaData.status,
+                      style: const TextStyle(
+                        color: Colors.white,
+                        fontSize: 10,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                  ),
                 ),
                 Positioned(
                   top: 8,
@@ -40,7 +49,7 @@ class MangaCard extends StatelessWidget {
                   child: Container(
                     padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
                     decoration: BoxDecoration(
-                      color: _couleurNote(mangaData.note),
+                      color: AppColors.couleurNote(mangaData.note),
                       borderRadius: BorderRadius.circular(8),
                     ),
                     child: Text(
@@ -74,7 +83,7 @@ class MangaCard extends StatelessWidget {
                       mangaData.estFavori
                           ? Icons.favorite
                           : Icons.favorite_border,
-                      color: Colors.red,
+                      color: AppColors.accent,
                       size: 14,
                     ),
                     const SizedBox(width: 4),

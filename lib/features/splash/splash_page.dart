@@ -1,7 +1,10 @@
+import 'dart:async';
 import 'dart:math';
 import 'package:flutter/material.dart';
+import 'package:folio/app/theme.dart';
 import 'package:folio/features/home/home_page.dart';
 import 'package:folio/features/onboarding/onboarding_page.dart';
+import 'package:package_info_plus/package_info_plus.dart';
 
 class SplashPage extends StatefulWidget {
   const SplashPage({super.key});
@@ -14,15 +17,18 @@ class _SplashPageState extends State<SplashPage> with TickerProviderStateMixin {
   late AnimationController _introController;
   late Animation<double> _logoScale;
   late Animation<double> _logoOpacity;
-  late Animation<double> _glowRadius;
   late Animation<double> _titleOpacity;
   late Animation<Offset> _titleSlide;
   late Animation<double> _subtitleOpacity;
-  late Animation<double> _barProgress;
+  late Animation<double> _versionOpacity;
 
+  late AnimationController _breathController; // halo qui "respire"
   late AnimationController _particleController;
   late AnimationController _exitController;
   late Animation<double> _exitOpacity;
+
+  Timer? _navTimer;
+  bool _navigationLancee = false;
 
   final List<_Particle> _particles = [];
   final Random _rng = Random();
@@ -32,73 +38,83 @@ class _SplashPageState extends State<SplashPage> with TickerProviderStateMixin {
     super.initState();
     _spawnParticles();
 
-    // ── Intro ─────────────────────────────────────────
+    // ── Intro : fondu net, sans rebond ────────────────
     _introController = AnimationController(
-      duration: const Duration(milliseconds: 2200),
+      duration: const Duration(milliseconds: 1400),
       vsync: this,
     );
 
     _logoOpacity = Tween<double>(begin: 0.0, end: 1.0).animate(
       CurvedAnimation(parent: _introController,
-          curve: const Interval(0.0, 0.4, curve: Curves.easeOut)));
+          curve: const Interval(0.0, 0.45, curve: Curves.easeOut)));
 
-    _logoScale = Tween<double>(begin: 0.3, end: 1.0).animate(
+    _logoScale = Tween<double>(begin: 0.82, end: 1.0).animate(
       CurvedAnimation(parent: _introController,
-          curve: const Interval(0.0, 0.55, curve: Curves.elasticOut)));
-
-    _glowRadius = Tween<double>(begin: 0.0, end: 1.0).animate(
-      CurvedAnimation(parent: _introController,
-          curve: const Interval(0.2, 0.7, curve: Curves.easeOut)));
+          curve: const Interval(0.0, 0.55, curve: Curves.easeOutCubic)));
 
     _titleOpacity = Tween<double>(begin: 0.0, end: 1.0).animate(
       CurvedAnimation(parent: _introController,
-          curve: const Interval(0.45, 0.68, curve: Curves.easeOut)));
+          curve: const Interval(0.35, 0.65, curve: Curves.easeOut)));
 
-    _titleSlide = Tween<Offset>(begin: const Offset(0, 0.5), end: Offset.zero).animate(
+    _titleSlide = Tween<Offset>(begin: const Offset(0, 0.35), end: Offset.zero).animate(
       CurvedAnimation(parent: _introController,
-          curve: const Interval(0.45, 0.68, curve: Curves.easeOut)));
+          curve: const Interval(0.35, 0.65, curve: Curves.easeOutCubic)));
 
     _subtitleOpacity = Tween<double>(begin: 0.0, end: 1.0).animate(
       CurvedAnimation(parent: _introController,
-          curve: const Interval(0.62, 0.82, curve: Curves.easeOut)));
+          curve: const Interval(0.55, 0.85, curve: Curves.easeOut)));
 
-    _barProgress = Tween<double>(begin: 0.0, end: 1.0).animate(
+    _versionOpacity = Tween<double>(begin: 0.0, end: 1.0).animate(
       CurvedAnimation(parent: _introController,
-          curve: const Interval(0.68, 1.0, curve: Curves.easeOut)));
+          curve: const Interval(0.7, 1.0, curve: Curves.easeOut)));
 
-    // ── Particules ─────────────────────────────────────
+    // ── Halo respirant derrière le logo ───────────────
+    _breathController = AnimationController(
+      duration: const Duration(milliseconds: 2400),
+      vsync: this,
+    )..repeat(reverse: true);
+
+    // ── Particules ────────────────────────────────────
     _particleController = AnimationController(
-      duration: const Duration(seconds: 5),
+      duration: const Duration(seconds: 6),
       vsync: this,
     )..repeat();
 
-    // ── Sortie ─────────────────────────────────────────
+    // ── Sortie ────────────────────────────────────────
     _exitController = AnimationController(
-      duration: const Duration(milliseconds: 650),
+      duration: const Duration(milliseconds: 450),
       vsync: this,
     );
     _exitOpacity = Tween<double>(begin: 1.0, end: 0.0).animate(
       CurvedAnimation(parent: _exitController, curve: Curves.easeInCubic));
 
     _introController.forward();
-    Future.delayed(const Duration(milliseconds: 3400), _navigate);
+    // Court : le splash ne doit jamais donner l'impression de faire attendre.
+    _navTimer = Timer(const Duration(milliseconds: 2200), _navigate);
   }
 
   void _spawnParticles() {
-    for (int i = 0; i < 28; i++) {
+    for (int i = 0; i < 20; i++) {
       _particles.add(_Particle(
         x: _rng.nextDouble(),
         y: _rng.nextDouble(),
-        size: _rng.nextDouble() * 3.5 + 1.0,
-        opacity: _rng.nextDouble() * 0.45 + 0.1,
-        speed: _rng.nextDouble() * 0.25 + 0.1,
+        size: _rng.nextDouble() * 3.0 + 1.0,
+        opacity: _rng.nextDouble() * 0.35 + 0.08,
+        speed: _rng.nextDouble() * 0.2 + 0.08,
         phase: _rng.nextDouble(),
       ));
     }
   }
 
+  /// Un tap n'importe où passe le splash immédiatement.
+  void _passer() {
+    _navTimer?.cancel();
+    _navigate();
+  }
+
   Future<void> _navigate() async {
-    if (!mounted) return;
+    if (!mounted || _navigationLancee) return;
+    _navigationLancee = true;
     await _exitController.forward();
     if (!mounted) return;
     final firstLaunch = await isFirstLaunch();
@@ -106,7 +122,7 @@ class _SplashPageState extends State<SplashPage> with TickerProviderStateMixin {
     Navigator.of(context).pushReplacement(PageRouteBuilder(
       pageBuilder: (_, _, _) =>
           firstLaunch ? const OnboardingPage() : const HomePage(),
-      transitionDuration: const Duration(milliseconds: 500),
+      transitionDuration: const Duration(milliseconds: 450),
       transitionsBuilder: (_, anim, _, child) =>
           FadeTransition(opacity: anim, child: child),
     ));
@@ -114,7 +130,9 @@ class _SplashPageState extends State<SplashPage> with TickerProviderStateMixin {
 
   @override
   void dispose() {
+    _navTimer?.cancel();
     _introController.dispose();
+    _breathController.dispose();
     _particleController.dispose();
     _exitController.dispose();
     super.dispose();
@@ -123,145 +141,151 @@ class _SplashPageState extends State<SplashPage> with TickerProviderStateMixin {
   @override
   Widget build(BuildContext context) {
     final isDark = MediaQuery.of(context).platformBrightness == Brightness.dark;
-    final bgColor = isDark ? const Color(0xFF121212) : const Color(0xFFFFFFFF);
-    final glowColor = isDark ? const Color(0xFF2A0A4A) : const Color(0xFFF3E8FF);
-    final subtitleColor = isDark ? const Color(0xFF9E9E9E) : const Color(0xFFAAAAAA);
+    final bgColor = isDark ? AppColors.backgroundDark : const Color(0xFFFFFFFF);
+    final glowColor = isDark ? const Color(0xFF241640) : const Color(0xFFF3E8FF);
+    final subtitleColor = isDark ? AppColors.textSecondary : const Color(0xFFAAAAAA);
 
     return FadeTransition(
       opacity: _exitOpacity,
       child: Scaffold(
         backgroundColor: bgColor,
-        body: Stack(
-          children: [
+        body: GestureDetector(
+          behavior: HitTestBehavior.opaque,
+          onTap: _passer,
+          child: Stack(
+            children: [
 
-            // ── Fond dégradé radial subtil ─────────────────
-            Positioned.fill(
-              child: DecoratedBox(
-                decoration: BoxDecoration(
-                  gradient: RadialGradient(
-                    center: const Alignment(0, -0.2),
-                    radius: 0.9,
-                    colors: [glowColor, bgColor],
+              // ── Fond dégradé radial subtil ─────────────────
+              Positioned.fill(
+                child: DecoratedBox(
+                  decoration: BoxDecoration(
+                    gradient: RadialGradient(
+                      center: const Alignment(0, -0.25),
+                      radius: 0.9,
+                      colors: [glowColor, bgColor],
+                    ),
                   ),
                 ),
               ),
-            ),
 
-            // ── Particules ─────────────────────────────────
-            RepaintBoundary(
-              child: AnimatedBuilder(
-                animation: _particleController,
-                builder: (_, _) => CustomPaint(
-                  painter: _ParticlePainter(_particles, _particleController.value),
-                  size: MediaQuery.of(context).size,
+              // ── Particules ─────────────────────────────────
+              RepaintBoundary(
+                child: AnimatedBuilder(
+                  animation: _particleController,
+                  builder: (_, _) => CustomPaint(
+                    painter: _ParticlePainter(_particles, _particleController.value),
+                    size: MediaQuery.of(context).size,
+                  ),
                 ),
               ),
-            ),
 
-            // ── Contenu ────────────────────────────────────
-            Center(
-              child: AnimatedBuilder(
-                animation: _introController,
-                builder: (_, _) => Column(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-
-                    // Glow + F lettre
-                    Stack(
-                      alignment: Alignment.center,
+              // ── Contenu ────────────────────────────────────
+              Center(
+                child: AnimatedBuilder(
+                  animation: Listenable.merge([_introController, _breathController]),
+                  builder: (_, _) {
+                    final breath = _breathController.value;
+                    return Column(
+                      mainAxisSize: MainAxisSize.min,
                       children: [
-                        // Halo violet (opacité dans la couleur, pas via Opacity widget)
-                        Container(
-                          width: 200 * _glowRadius.value,
-                          height: 200 * _glowRadius.value,
-                          decoration: BoxDecoration(
-                            shape: BoxShape.circle,
-                            boxShadow: [
-                              BoxShadow(
-                                color: Color(0xFFBB86FC).withValues(alpha:_glowRadius.value * 0.6),
-                                blurRadius: 90,
-                                spreadRadius: 30,
-                              ),
-                            ],
-                          ),
-                        ),
 
-                        // Logo PNG (FadeTransition évite l'Opacity widget)
+                        // Logo : tuile arrondie + halo respirant
                         FadeTransition(
                           opacity: _logoOpacity,
                           child: Transform.scale(
-                            scale: _logoScale.value,
-                            child: Image.asset(
-                              'assets/splash/logo.png',
-                              width: 160,
-                              height: 160,
-                              fit: BoxFit.contain,
+                            scale: _logoScale.value * (1 + 0.015 * breath),
+                            child: Container(
+                              decoration: BoxDecoration(
+                                borderRadius: BorderRadius.circular(30),
+                                boxShadow: [
+                                  BoxShadow(
+                                    color: AppColors.primary.withValues(
+                                        alpha: (0.35 + 0.2 * breath) * _logoOpacity.value),
+                                    blurRadius: 60 + 20 * breath,
+                                    spreadRadius: 4,
+                                  ),
+                                ],
+                              ),
+                              child: ClipRRect(
+                                borderRadius: BorderRadius.circular(30),
+                                child: Image.asset(
+                                  'assets/splash/logo.png',
+                                  width: 132,
+                                  height: 132,
+                                  fit: BoxFit.contain,
+                                ),
+                              ),
+                            ),
+                          ),
+                        ),
+
+                        const SizedBox(height: 44),
+
+                        // FOLIO
+                        SlideTransition(
+                          position: _titleSlide,
+                          child: FadeTransition(
+                            opacity: _titleOpacity,
+                            child: ShaderMask(
+                              shaderCallback: (bounds) => const LinearGradient(
+                                colors: [AppColors.primaryLight, AppColors.accent],
+                              ).createShader(bounds),
+                              child: const Text(
+                                'FOLIO',
+                                style: TextStyle(
+                                  fontSize: 42,
+                                  fontWeight: FontWeight.bold,
+                                  color: Colors.white,
+                                  letterSpacing: 13,
+                                ),
+                              ),
+                            ),
+                          ),
+                        ),
+
+                        const SizedBox(height: 10),
+
+                        // MANGA TRACKER
+                        FadeTransition(
+                          opacity: _subtitleOpacity,
+                          child: Text(
+                            'MANGA TRACKER',
+                            style: TextStyle(
+                              fontSize: 11,
+                              color: subtitleColor,
+                              letterSpacing: 6,
                             ),
                           ),
                         ),
                       ],
-                    ),
-
-                    const SizedBox(height: 40),
-
-                    // FOLIO
-                    SlideTransition(
-                      position: _titleSlide,
-                      child: FadeTransition(
-                        opacity: _titleOpacity,
-                        child: ShaderMask(
-                          shaderCallback: (bounds) => const LinearGradient(
-                            colors: [Color(0xFFBB86FC), Color(0xFFE91E8C)],
-                          ).createShader(bounds),
-                          child: const Text(
-                            'FOLIO',
-                            style: TextStyle(
-                              fontSize: 46,
-                              fontWeight: FontWeight.bold,
-                              color: Colors.white,
-                              letterSpacing: 14,
-                            ),
-                          ),
-                        ),
-                      ),
-                    ),
-
-                    const SizedBox(height: 10),
-
-                    // MANGA TRACKER
-                    FadeTransition(
-                      opacity: _subtitleOpacity,
-                      child: Text(
-                        'MANGA TRACKER',
-                        style: TextStyle(
-                          fontSize: 11,
-                          color: subtitleColor,
-                          letterSpacing: 6,
-                        ),
-                      ),
-                    ),
-
-                    const SizedBox(height: 32),
-
-                    // Barre de progression
-                    ClipRRect(
-                      borderRadius: BorderRadius.circular(4),
-                      child: SizedBox(
-                        width: 100,
-                        height: 2,
-                        child: LinearProgressIndicator(
-                          value: _barProgress.value,
-                          backgroundColor: Colors.white10,
-                          valueColor: const AlwaysStoppedAnimation<Color>(
-                              Color(0xFFBB86FC)),
-                        ),
-                      ),
-                    ),
-                  ],
+                    );
+                  },
                 ),
               ),
-            ),
-          ],
+
+              // ── Version en bas ─────────────────────────────
+              Positioned(
+                left: 0,
+                right: 0,
+                bottom: MediaQuery.of(context).padding.bottom + 28,
+                child: FadeTransition(
+                  opacity: _versionOpacity,
+                  child: FutureBuilder<PackageInfo>(
+                    future: PackageInfo.fromPlatform(),
+                    builder: (context, snapshot) => Text(
+                      snapshot.hasData ? 'v${snapshot.data!.version}' : '',
+                      textAlign: TextAlign.center,
+                      style: TextStyle(
+                        fontSize: 11,
+                        color: subtitleColor.withValues(alpha: 0.7),
+                        letterSpacing: 1.5,
+                      ),
+                    ),
+                  ),
+                ),
+              ),
+            ],
+          ),
         ),
       ),
     );
@@ -287,19 +311,19 @@ class _ParticlePainter extends CustomPainter {
     for (final p in particles) {
       final t = (progress * p.speed + p.phase) % 1.0;
       final y = size.height * (1.0 - t);
-      final x = size.width * p.x + sin(t * pi * 2 + p.phase * pi) * 18;
-      final pulse = (sin(progress * pi * 6 + p.phase * pi * 2) + 1) / 2;
-      final opacity = p.opacity * (0.3 + 0.7 * pulse);
+      final x = size.width * p.x + sin(t * pi * 2 + p.phase * pi) * 16;
+      final pulse = (sin(progress * pi * 4 + p.phase * pi * 2) + 1) / 2;
+      final opacity = p.opacity * (0.35 + 0.65 * pulse);
 
       canvas.drawCircle(
         Offset(x, y),
         p.size,
         Paint()
           ..color = Color.lerp(
-            const Color(0xFFBB86FC),
-            const Color(0xFFE91E8C),
+            AppColors.primaryLight,
+            AppColors.accent,
             p.phase,
-          )!.withValues(alpha:opacity)
+          )!.withValues(alpha: opacity)
           ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 2.5),
       );
     }

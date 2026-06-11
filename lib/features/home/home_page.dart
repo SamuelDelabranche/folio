@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:folio/app/providers.dart';
 import 'package:folio/features/library/library_page.dart';
 import 'package:folio/features/settings/settings_page.dart';
 import 'package:folio/features/statistics/statistics_page.dart';
@@ -19,6 +20,7 @@ class _HomePage extends ConsumerState<HomePage> {
   @override
   void initState() {
     super.initState();
+    _indexActif = ref.read(startTabProvider);
     UpdateService.checkForUpdate().then((info) {
       if (info != null && mounted) _showUpdateDialog(info);
     });
@@ -28,7 +30,7 @@ class _HomePage extends ConsumerState<HomePage> {
     showDialog(
       context: context,
       builder: (ctx) => AlertDialog(
-        icon: const Icon(Icons.system_update_alt_outlined, size: 44, color: Colors.deepPurple),
+        icon: Icon(Icons.system_update_alt_outlined, size: 44, color: Theme.of(ctx).colorScheme.primary),
         title: const Text('Mise à jour disponible'),
         content: Text(
           'La version ${info.latestVersion} est disponible.\n\n'

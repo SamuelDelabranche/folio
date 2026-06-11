@@ -8,6 +8,10 @@ import 'package:folio/app/providers.dart';
 import 'package:folio/app/theme.dart';
 import 'package:folio/data/database/app_database.dart';
 import 'package:folio/data/database/daos/manga_dao.dart';
+import 'package:folio/data/models/lien.dart';
+import 'package:folio/features/onboarding/onboarding_page.dart';
+import 'package:folio/services/update_service.dart';
+import 'package:url_launcher/url_launcher.dart';
 import 'package:package_info_plus/package_info_plus.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:share_plus/share_plus.dart';
@@ -119,6 +123,162 @@ class _SettingsPage extends ConsumerState<SettingsPage> {
     );
   }
 
+  void _showStartTabPicker(int current) {
+    const tabs = [
+      (0, Icons.auto_stories_outlined, 'Bibliothèque'),
+      (1, Icons.analytics_outlined, 'Statistiques'),
+      (2, Icons.settings_outlined, 'Paramètres'),
+    ];
+    showModalBottomSheet(
+      context: context,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      builder: (_) => Padding(
+        padding: const EdgeInsets.fromLTRB(16, 12, 16, 32),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Container(
+              width: 36, height: 4,
+              margin: const EdgeInsets.only(bottom: 20),
+              decoration: BoxDecoration(
+                color: Colors.grey.shade400,
+                borderRadius: BorderRadius.circular(2),
+              ),
+            ),
+            const Text('Onglet de démarrage', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
+            const SizedBox(height: 16),
+            for (final (index, icone, label) in tabs) ...[
+              _ThemeOption(
+                icon: icone,
+                label: label,
+                selected: current == index,
+                onTap: () {
+                  ref.read(startTabProvider.notifier).set(index);
+                  Navigator.pop(context);
+                },
+              ),
+              if (index < 2) const SizedBox(height: 8),
+            ],
+          ],
+        ),
+      ),
+    );
+  }
+
+  Future<void> _revoirIntro() async {
+    await resetOnboarding();
+    if (!mounted) return;
+    Navigator.push(context, MaterialPageRoute(builder: (_) => const OnboardingPage()));
+  }
+
+  Future<void> _verifierMaj() async {
+    final messenger = ScaffoldMessenger.of(context);
+    try {
+      final info = await UpdateService.checkForUpdate(force: true);
+      if (!mounted) return;
+      if (info == null) {
+        messenger.showSnackBar(SnackBar(
+          backgroundColor: AppColors.success,
+          content: const Text('Folio est à jour 🎉', textAlign: TextAlign.center, style: TextStyle(color: Colors.black87)),
+        ));
+      } else {
+        messenger.showSnackBar(SnackBar(
+          backgroundColor: AppColors.info,
+          duration: const Duration(seconds: 6),
+          content: Text('Version ${info.latestVersion} disponible', style: const TextStyle(color: Colors.black87)),
+          action: SnackBarAction(
+            label: 'Télécharger',
+            textColor: Colors.black87,
+            onPressed: () => UpdateService.openReleasePage(info.releaseUrl),
+          ),
+        ));
+      }
+    } catch (_) {
+      messenger.showSnackBar(SnackBar(
+        backgroundColor: AppColors.danger,
+        content: const Text('Vérification impossible (hors ligne ?)', textAlign: TextAlign.center, style: TextStyle(color: Colors.white)),
+      ));
+    }
+  }
+
+  Future<void> _ouvrirCodeSource() async {
+    final uri = Uri.parse('https://github.com/SamuelDelabranche/folio');
+    if (await canLaunchUrl(uri)) {
+      await launchUrl(uri, mode: LaunchMode.externalApplication);
+    }
+  }
+
+  void _toutEffacer() {
+    showDialog(
+      context: context,
+      builder: (dialogContext) => AlertDialog(
+        icon: Icon(Icons.delete_forever_outlined, color: AppColors.danger, size: 48),
+        title: Text('Tout effacer ?', style: TextStyle(color: AppColors.danger)),
+        content: const Text(
+          'Toute votre bibliothèque sera définitivement supprimée.\n\nPensez à exporter vos données avant !',
+          textAlign: TextAlign.center,
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(dialogContext),
+            child: const Text('Annuler'),
+          ),
+          TextButton(
+            style: TextButton.styleFrom(foregroundColor: AppColors.danger),
+            onPressed: () async {
+              final messenger = ScaffoldMessenger.of(context);
+              Navigator.pop(dialogContext);
+              await _dao.deleteAllMangas();
+              ref.invalidate(mangasProvider);
+              messenger.showSnackBar(SnackBar(
+                backgroundColor: AppColors.success,
+                content: const Text('Bibliothèque effacée', textAlign: TextAlign.center, style: TextStyle(color: Colors.black87)),
+              ));
+            },
+            child: const Text('Tout effacer'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  /// Valide un item du JSON d'import et le convertit en companion Drift.
+  /// Lève une [FormatException] si la structure est invalide.
+  MangaTableCompanion _companionDepuisJson(dynamic item) {
+    if (item is! Map<String, dynamic>) {
+      throw const FormatException('Item invalide');
+    }
+    final titre = item['titre'];
+    if (titre is! String || titre.trim().isEmpty) {
+      throw const FormatException('Titre manquant');
+    }
+    final note = ((item['note'] as num?)?.toDouble() ?? 0).clamp(0.0, 10.0);
+    final chapitres = ((item['chapitres'] as num?)?.toDouble() ?? 0).clamp(0.0, double.maxFinite);
+
+    // Les liens sont revalidés (schemes http/https uniquement) :
+    // un fichier partagé ne doit pas pouvoir injecter d'URL dangereuse.
+    String? liensJson = item['liens'] as String?;
+    if (liensJson != null && liensJson.isNotEmpty) {
+      final liens = liensFromJson(liensJson).where((l) => urlEstValide(l.url)).toList();
+      liensJson = liensToJson(liens);
+    }
+
+    return MangaTableCompanion(
+      titre: Value(titre.trim()),
+      description: Value(item['description'] as String?),
+      imagePath: Value(item['imagePath'] as String?),
+      status: Value(item['status'] as String? ?? 'À lire'),
+      genre: Value(item['genre'] as String?),
+      typeManga: Value(item['typeManga'] as String? ?? 'Manga'),
+      estFavori: Value(item['estFavori'] as bool? ?? false),
+      note: Value(note),
+      chapitres: Value(chapitres),
+      liens: Value(liensJson),
+    );
+  }
+
   void _importer() {
     showDialog(
       context: context,
@@ -151,28 +311,24 @@ class _SettingsPage extends ConsumerState<SettingsPage> {
                 if (result == null) return;
 
                 final fichier = File(result.files.single.path!);
+                // Garde-fou : un export Folio fait quelques Ko, on refuse
+                // tout fichier anormalement gros avant de le lire en mémoire.
+                if (await fichier.length() > 10 * 1024 * 1024) {
+                  throw const FormatException('Fichier trop volumineux');
+                }
                 final contenu = await fichier.readAsString();
                 final List<dynamic> listeJson = jsonDecode(contenu);
 
-                await _dao.deleteAllMangas();
-                for (final item in listeJson) {
-                  await _dao.insertManga(MangaTableCompanion(
-                    titre: Value(item['titre'] as String),
-                    description: Value(item['description'] as String?),
-                    imagePath: Value(item['imagePath'] as String?),
-                    status: Value(item['status'] as String),
-                    genre: Value(item['genre'] as String?),
-                    typeManga: Value(item['typeManga'] as String),
-                    estFavori: Value(item['estFavori'] as bool),
-                    note: Value((item['note'] as num).toDouble()),
-                    chapitres: Value((item['chapitres'] as num).toDouble()),
-                    liens: Value(item['liens'] as String?),
-                  ));
-                }
+                // On valide TOUT avant d'écrire quoi que ce soit : si un
+                // item est corrompu, la bibliothèque actuelle est intacte.
+                final companions =
+                    listeJson.map((item) => _companionDepuisJson(item)).toList();
+
+                await _dao.replaceAllMangas(companions);
                 ref.invalidate(mangasProvider);
                 messenger.showSnackBar(SnackBar(
                   backgroundColor: AppColors.success,
-                  content: const Text('Bibliothèque importée avec succès', textAlign: TextAlign.center, style: TextStyle(color: Colors.black87)),
+                  content: Text('${companions.length} manga(s) importé(s)', textAlign: TextAlign.center, style: const TextStyle(color: Colors.black87)),
                 ));
               } catch (e) {
                 messenger.showSnackBar(SnackBar(
@@ -198,6 +354,42 @@ class _SettingsPage extends ConsumerState<SettingsPage> {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
 
+            // ── Général ──
+            _SectionLabel('Général'),
+            Card(
+              margin: EdgeInsets.zero,
+              child: Column(
+                children: [
+                  Consumer(
+                    builder: (context, ref, _) {
+                      final tab = ref.watch(startTabProvider);
+                      final label = switch (tab) {
+                        1 => 'Statistiques',
+                        2 => 'Paramètres',
+                        _ => 'Bibliothèque',
+                      };
+                      return _SettingsTile(
+                        icon: Icons.home_outlined,
+                        iconColor: AppColors.primary,
+                        title: 'Onglet de démarrage',
+                        trailing: Text(label, style: const TextStyle(color: Colors.grey, fontSize: 13)),
+                        onTap: () => _showStartTabPicker(tab),
+                      );
+                    },
+                  ),
+                  const Divider(height: 1, indent: 68),
+                  _SettingsTile(
+                    icon: Icons.replay_outlined,
+                    iconColor: Colors.teal,
+                    title: 'Revoir l\'introduction',
+                    subtitle: 'Rejouer les écrans de bienvenue',
+                    onTap: _revoirIntro,
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(height: 24),
+
             // ── Données ──
             _SectionLabel('Données'),
             Card(
@@ -218,6 +410,14 @@ class _SettingsPage extends ConsumerState<SettingsPage> {
                     title: 'Importer la bibliothèque',
                     subtitle: 'Remplace les données existantes',
                     onTap: _importer,
+                  ),
+                  const Divider(height: 1, indent: 68),
+                  _SettingsTile(
+                    icon: Icons.delete_forever_outlined,
+                    iconColor: AppColors.danger,
+                    title: 'Tout effacer',
+                    subtitle: 'Supprime définitivement la bibliothèque',
+                    onTap: _toutEffacer,
                   ),
                 ],
               ),
@@ -243,6 +443,32 @@ class _SettingsPage extends ConsumerState<SettingsPage> {
                     onTap: () => _showThemePicker(context, ref, mode),
                   );
                 },
+              ),
+            ),
+            const SizedBox(height: 24),
+
+            // ── À propos ──
+            _SectionLabel('À propos'),
+            Card(
+              margin: EdgeInsets.zero,
+              child: Column(
+                children: [
+                  _SettingsTile(
+                    icon: Icons.system_update_alt_outlined,
+                    iconColor: AppColors.accent,
+                    title: 'Vérifier les mises à jour',
+                    subtitle: 'Rechercher une nouvelle version',
+                    onTap: _verifierMaj,
+                  ),
+                  const Divider(height: 1, indent: 68),
+                  _SettingsTile(
+                    icon: Icons.code_outlined,
+                    iconColor: Colors.blueGrey,
+                    title: 'Code source',
+                    subtitle: 'Folio est open source (GitHub)',
+                    onTap: _ouvrirCodeSource,
+                  ),
+                ],
               ),
             ),
             const SizedBox(height: 32),

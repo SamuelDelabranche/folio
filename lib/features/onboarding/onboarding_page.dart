@@ -1,6 +1,7 @@
 import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:path_provider/path_provider.dart';
+import 'package:folio/app/theme.dart';
 import 'package:folio/features/home/home_page.dart';
 
 // ── Données des slides ─────────────────────────────────────
@@ -25,14 +26,14 @@ const _slides = [
     title: 'Ta bibliothèque manga\nen un endroit',
     desc: 'Ajoute, organise et retrouve\ntous tes mangas facilement.',
     emoji: '📚',
-    color: Color(0xFFBB86FC),
+    color: AppColors.primaryLight,
   ),
   _Slide(
     tag: 'Statistiques',
     title: 'Note et analyse\nta progression',
     desc: 'Suis tes chapitres lus, tes notes\net tes genres préférés.',
     emoji: '⭐',
-    color: Color(0xFFE91E8C),
+    color: AppColors.accent,
   ),
   _Slide(
     tag: 'Prêt !',
@@ -54,6 +55,13 @@ Future<void> markOnboardingDone() async {
   final dir = await getApplicationDocumentsDirectory();
   final flag = File('${dir.path}/.onboarding_done');
   await flag.writeAsString('done');
+}
+
+/// Permet de revoir l'introduction depuis les paramètres.
+Future<void> resetOnboarding() async {
+  final dir = await getApplicationDocumentsDirectory();
+  final flag = File('${dir.path}/.onboarding_done');
+  if (flag.existsSync()) await flag.delete();
 }
 
 // ── Page onboarding ────────────────────────────────────────
@@ -99,7 +107,7 @@ class _OnboardingPageState extends State<OnboardingPage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xFF121212),
+      backgroundColor: AppColors.backgroundDark,
       body: Stack(
         children: [
           // Slides
@@ -155,7 +163,7 @@ class _OnboardingPageState extends State<OnboardingPage> {
                     decoration: BoxDecoration(
                       borderRadius: BorderRadius.circular(16),
                       gradient: LinearGradient(
-                        colors: [_slides[_current].color, const Color(0xFFE91E8C)],
+                        colors: [_slides[_current].color, AppColors.accent],
                       ),
                       boxShadow: [
                         BoxShadow(

@@ -26,8 +26,11 @@ class UpdateService {
   }
 
   static bool _isNewer(String latest, String current) {
-    final l = latest.split('.').map(int.parse).toList();
-    final c = current.split('.').map(int.parse).toList();
+    // Tolère les suffixes type "1.2.0-beta" : on n'extrait que les chiffres.
+    int parsePart(String s) =>
+        int.tryParse(RegExp(r'\d+').firstMatch(s)?.group(0) ?? '') ?? 0;
+    final l = latest.split('.').map(parsePart).toList();
+    final c = current.split('.').map(parsePart).toList();
     for (int i = 0; i < 3; i++) {
       final lv = i < l.length ? l[i] : 0;
       final cv = i < c.length ? c[i] : 0;
@@ -37,8 +40,10 @@ class UpdateService {
     return false;
   }
 
-  static Future<UpdateInfo?> checkForUpdate() async {
-    if (!await _shouldCheck()) return null;
+  /// [force] ignore l'intervalle de 24 h (vérification manuelle depuis les
+  /// paramètres) et propage les erreurs réseau pour pouvoir les afficher.
+  static Future<UpdateInfo?> checkForUpdate({bool force = false}) async {
+    if (!force && !await _shouldCheck()) return null;
 
     try {
       final response = await http.get(
@@ -63,6 +68,7 @@ class UpdateService {
       }
       return null;
     } catch (_) {
+      if (force) rethrow;
       return null;
     }
   }

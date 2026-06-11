@@ -5,6 +5,8 @@ import 'package:folio/data/database/app_database.dart';
 import 'package:drift/drift.dart' hide Column;
 import 'package:folio/app/constants.dart';
 import 'package:folio/data/models/lien.dart';
+import 'package:folio/app/theme.dart';
+import 'package:folio/shared/widgets/lien_dialog.dart';
 
 class AddMangaPage extends ConsumerStatefulWidget {
   const AddMangaPage({super.key});
@@ -34,54 +36,9 @@ class _AddMangaPageState extends ConsumerState<AddMangaPage> {
     super.dispose();
   }
 
-  void _ajouterLien() {
-    final nomController = TextEditingController();
-    final urlController = TextEditingController();
-    showDialog(
-      context: context,
-      builder: (ctx) => AlertDialog(
-        title: const Text('Ajouter un lien'),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            TextField(
-              controller: nomController,
-              textCapitalization: TextCapitalization.sentences,
-              decoration: InputDecoration(
-                labelText: 'Nom',
-                hintText: 'ex: Scan VF',
-                border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
-              ),
-            ),
-            const SizedBox(height: 12),
-            TextField(
-              controller: urlController,
-              keyboardType: TextInputType.url,
-              decoration: InputDecoration(
-                labelText: 'URL',
-                hintText: 'https://...',
-                border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
-              ),
-            ),
-          ],
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(ctx),
-            child: const Text('Annuler'),
-          ),
-          FilledButton(
-            onPressed: () {
-              if (nomController.text.isNotEmpty && urlController.text.isNotEmpty) {
-                setState(() => _liens.add(Lien(nom: nomController.text, url: urlController.text)));
-                Navigator.pop(ctx);
-              }
-            },
-            child: const Text('Ajouter'),
-          ),
-        ],
-      ),
-    );
+  Future<void> _ajouterLien() async {
+    final lien = await showAjouterLienDialog(context);
+    if (lien != null) setState(() => _liens.add(lien));
   }
 
   InputDecoration _inputDecoration(String label, {IconData? icon}) {
@@ -118,7 +75,12 @@ class _AddMangaPageState extends ConsumerState<AddMangaPage> {
                 keyboardType: TextInputType.number,
                 controller: _chapitreController,
                 decoration: _inputDecoration('Chapitres lus', icon: Icons.menu_book_outlined),
-                validator: (value) => (value == null || value.isEmpty) ? 'Champ requis' : null,
+                validator: (value) {
+                  if (value == null || value.isEmpty) return 'Champ requis';
+                  final n = double.tryParse(value.replaceAll(',', '.'));
+                  if (n == null || n < 0) return 'Nombre invalide';
+                  return null;
+                },
               ),
               const SizedBox(height: 24),
 
@@ -130,14 +92,14 @@ class _AddMangaPageState extends ConsumerState<AddMangaPage> {
                   Container(
                     padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
                     decoration: BoxDecoration(
-                      color: Color.lerp(Colors.black, Colors.green, _note / 10)!.withValues(alpha: 0.15),
+                      color: AppColors.couleurNote(_note).withValues(alpha: 0.15),
                       borderRadius: BorderRadius.circular(20),
                     ),
                     child: Text(
                       '${_note.toStringAsFixed(1)} / 10',
                       style: TextStyle(
                         fontWeight: FontWeight.bold,
-                        color: Color.lerp(Colors.black, Colors.green, _note / 10),
+                        color: AppColors.couleurNote(_note),
                       ),
                     ),
                   ),
@@ -307,7 +269,7 @@ class _AddMangaPageState extends ConsumerState<AddMangaPage> {
                         typeManga: Value(_typeSelectionne),
                         estFavori: Value(_estFavori),
                         note: Value(_note),
-                        chapitres: Value(double.parse(_chapitreController.text)),
+                        chapitres: Value(double.tryParse(_chapitreController.text.replaceAll(',', '.')) ?? 0),
                         genre: Value(_genreSelectionne.join(',')),
                         liens: Value(liensToJson(_liens)),
                       ),

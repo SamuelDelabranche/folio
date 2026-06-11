@@ -8,6 +8,8 @@ void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   final container = ProviderContainer();
   await container.read(themeModeProvider.notifier).load();
+  await container.read(viewModeProvider.notifier).load();
+  await container.read(startTabProvider.notifier).load();
   runApp(UncontrolledProviderScope(container: container, child: const MyApp()));
 }
 

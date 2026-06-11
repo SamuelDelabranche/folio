@@ -24,7 +24,21 @@ class MangaDao extends DatabaseAccessor<AppDatabase> with _$MangaDaoMixin {
     return (delete(mangaTable)..where((m) => m.id.equals(id))).go();
   }
 
+  Future<void> deleteMangas(List<int> ids) {
+    return (delete(mangaTable)..where((m) => m.id.isIn(ids))).go();
+  }
+
   Future<void> deleteAllMangas() {
     return delete(mangaTable).go();
+  }
+
+  /// Remplace toute la bibliothèque de façon atomique : si une insertion
+  /// échoue, la transaction est annulée et les données existantes sont
+  /// conservées (utilisé par l'import).
+  Future<void> replaceAllMangas(List<MangaTableCompanion> mangas) {
+    return db.transaction(() async {
+      await delete(mangaTable).go();
+      await db.batch((b) => b.insertAll(mangaTable, mangas));
+    });
   }
 }

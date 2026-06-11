@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:folio/app/providers.dart';
+import 'package:folio/app/theme.dart';
 
 class StatisticsPage extends ConsumerWidget {
   const StatisticsPage({super.key});
@@ -59,14 +60,14 @@ class StatisticsPage extends ConsumerWidget {
                             value: '$totalMangas',
                             label: 'Mangas',
                             icon: Icons.auto_stories_outlined,
-                            color: Colors.deepPurple,
+                            color: AppColors.primary,
                           ),
                           const VerticalDivider(thickness: 1, width: 32),
                           _OverviewStat(
                             value: moyenneNote.toStringAsFixed(1),
                             label: 'Note moy.',
                             icon: Icons.star_outline,
-                            color: Colors.amber,
+                            color: AppColors.stars,
                           ),
                           const VerticalDivider(thickness: 1, width: 32),
                           _OverviewStat(
@@ -87,10 +88,10 @@ class StatisticsPage extends ConsumerWidget {
                   title: 'Par statut',
                   child: Column(
                     children: [
-                      _ProgressRow(label: 'Terminé', count: termine, total: totalMangas, color: Colors.green),
-                      _ProgressRow(label: 'En cours', count: enCours, total: totalMangas, color: Colors.blue),
-                      _ProgressRow(label: 'À lire', count: aLire, total: totalMangas, color: Colors.orange),
-                      _ProgressRow(label: 'Abandonné', count: abandonne, total: totalMangas, color: Colors.red, last: true),
+                      _ProgressRow(label: 'Terminé', count: termine, total: totalMangas, color: AppColors.statutTermine),
+                      _ProgressRow(label: 'En cours', count: enCours, total: totalMangas, color: AppColors.statutEnCours),
+                      _ProgressRow(label: 'À lire', count: aLire, total: totalMangas, color: AppColors.statutALire),
+                      _ProgressRow(label: 'Abandonné', count: abandonne, total: totalMangas, color: AppColors.statutAbandonne, last: true),
                     ],
                   ),
                 ),
@@ -101,10 +102,10 @@ class StatisticsPage extends ConsumerWidget {
                   title: 'Par type',
                   child: Column(
                     children: [
-                      _ProgressRow(label: 'Manga', count: manga, total: totalMangas, color: Colors.deepPurple),
-                      _ProgressRow(label: 'Manhwa', count: manhwa, total: totalMangas, color: Colors.indigo),
-                      _ProgressRow(label: 'Manhua', count: manhua, total: totalMangas, color: Colors.cyan),
-                      _ProgressRow(label: 'Novel', count: novel, total: totalMangas, color: Colors.brown, last: true),
+                      _ProgressRow(label: 'Manga', count: manga, total: totalMangas, color: AppColors.primary),
+                      _ProgressRow(label: 'Manhwa', count: manhwa, total: totalMangas, color: AppColors.accent),
+                      _ProgressRow(label: 'Manhua', count: manhua, total: totalMangas, color: AppColors.statutALire),
+                      _ProgressRow(label: 'Novel', count: novel, total: totalMangas, color: AppColors.statutEnCours, last: true),
                     ],
                   ),
                 ),

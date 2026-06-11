@@ -9,15 +9,7 @@ import 'package:folio/app/theme.dart';
 import 'package:folio/data/database/app_database.dart';
 import 'package:folio/data/database/daos/manga_dao.dart';
 import 'package:folio/data/models/lien.dart';
-
-const List<Color> _pastelColors = [
-  Color(0xFFFFB3BA),
-  Color(0xFFFFDFBA),
-  Color(0xFFFFFFBA),
-  Color(0xFFBAFFBA),
-  Color(0xFFBAE1FF),
-  Color(0xFFD4BAFF),
-];
+import 'package:folio/shared/widgets/lien_dialog.dart';
 
 class MangaDetailPage extends ConsumerStatefulWidget {
   final MangaTableData mangaData;
@@ -89,8 +81,6 @@ class _MangaDetailPage extends ConsumerState<MangaDetailPage> {
     ref.invalidate(mangasProvider);
   }
 
-  Color _couleurNote(double note) => Color.lerp(Colors.black, Colors.green, note / 10)!;
-
   void _copierLien(String url) {
     Clipboard.setData(ClipboardData(text: url));
     ScaffoldMessenger.of(context).showSnackBar(
@@ -102,54 +92,24 @@ class _MangaDetailPage extends ConsumerState<MangaDetailPage> {
     );
   }
 
-  void _ajouterLien() {
-    final nomController = TextEditingController();
-    final urlController = TextEditingController();
-    showDialog(
-      context: context,
-      builder: (ctx) => AlertDialog(
-        title: const Text('Ajouter un lien'),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            TextField(
-              controller: nomController,
-              textCapitalization: TextCapitalization.sentences,
-              decoration: InputDecoration(
-                labelText: 'Nom',
-                hintText: 'ex: Scan VF',
-                border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
-              ),
-            ),
-            const SizedBox(height: 12),
-            TextField(
-              controller: urlController,
-              keyboardType: TextInputType.url,
-              decoration: InputDecoration(
-                labelText: 'URL',
-                hintText: 'https://...',
-                border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
-              ),
-            ),
-          ],
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(ctx),
-            child: const Text('Annuler'),
-          ),
-          FilledButton(
-            onPressed: () {
-              if (nomController.text.isNotEmpty && urlController.text.isNotEmpty) {
-                setState(() => _liens.add(Lien(nom: nomController.text, url: urlController.text)));
-                Navigator.pop(ctx);
-              }
-            },
-            child: const Text('Ajouter'),
-          ),
-        ],
-      ),
+  Future<void> _ajouterLien() async {
+    final lien = await showAjouterLienDialog(context);
+    if (lien != null) setState(() => _liens.add(lien));
+  }
+
+  Future<void> _plusUnChapitre() async {
+    HapticFeedback.lightImpact();
+    final actuel = double.tryParse(_chapitresController.text) ?? widget.mangaData.chapitres;
+    final nouveau = actuel + 1;
+    await _dao.updateMangaByElement(
+      widget.mangaData.id,
+      MangaTableCompanion(chapitres: Value(nouveau)),
     );
+    ref.invalidate(mangasProvider);
+    setState(() {
+      _chapitresController.text =
+          nouveau % 1 == 0 ? nouveau.toInt().toString() : nouveau.toString();
+    });
   }
 
   @override
@@ -248,7 +208,7 @@ class _MangaDetailPage extends ConsumerState<MangaDetailPage> {
                   widget.mangaData.imagePath != null
                       ? Image.file(File(widget.mangaData.imagePath!), fit: BoxFit.cover, width: double.infinity, height: 260)
                       : Container(
-                          color: _pastelColors[widget.mangaData.id % _pastelColors.length],
+                          color: AppColors.pastels[widget.mangaData.id % AppColors.pastels.length],
                           height: 260,
                           width: double.infinity,
                         ),
@@ -411,12 +371,12 @@ class _MangaDetailPage extends ConsumerState<MangaDetailPage> {
                                   Container(
                                     padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
                                     decoration: BoxDecoration(
-                                      color: _couleurNote(_noteEdition).withValues(alpha: 0.15),
+                                      color: AppColors.couleurNote(_noteEdition).withValues(alpha: 0.15),
                                       borderRadius: BorderRadius.circular(20),
                                     ),
                                     child: Text(
                                       '${_noteEdition.toStringAsFixed(1)} / 10',
-                                      style: TextStyle(fontWeight: FontWeight.bold, color: _couleurNote(_noteEdition)),
+                                      style: TextStyle(fontWeight: FontWeight.bold, color: AppColors.couleurNote(_noteEdition)),
                                     ),
                                   ),
                                 ],
@@ -449,7 +409,19 @@ class _MangaDetailPage extends ConsumerState<MangaDetailPage> {
                                 ListTile(
                                   leading: const Icon(Icons.menu_book_outlined),
                                   title: const Text('Chapitres lus'),
-                                  trailing: Text(_chapitresController.text, style: const TextStyle(color: Colors.grey)),
+                                  trailing: Row(
+                                    mainAxisSize: MainAxisSize.min,
+                                    children: [
+                                      Text(_chapitresController.text, style: const TextStyle(color: Colors.grey)),
+                                      const SizedBox(width: 8),
+                                      IconButton.filledTonal(
+                                        onPressed: _plusUnChapitre,
+                                        tooltip: '+1 chapitre',
+                                        visualDensity: VisualDensity.compact,
+                                        icon: const Icon(Icons.plus_one, size: 18),
+                                      ),
+                                    ],
+                                  ),
                                 ),
                                 const Divider(height: 1, indent: 56),
                                 ListTile(
@@ -458,12 +430,12 @@ class _MangaDetailPage extends ConsumerState<MangaDetailPage> {
                                   trailing: Container(
                                     padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
                                     decoration: BoxDecoration(
-                                      color: _couleurNote(widget.mangaData.note).withValues(alpha: 0.15),
+                                      color: AppColors.couleurNote(widget.mangaData.note).withValues(alpha: 0.15),
                                       borderRadius: BorderRadius.circular(20),
                                     ),
                                     child: Text(
                                       '${_noteEdition.toStringAsFixed(1)} / 10',
-                                      style: TextStyle(fontWeight: FontWeight.bold, color: _couleurNote(_noteEdition)),
+                                      style: TextStyle(fontWeight: FontWeight.bold, color: AppColors.couleurNote(_noteEdition)),
                                     ),
                                   ),
                                 ),

@@ -7,6 +7,7 @@ import 'package:folio/features/add_Manga/add_manga_page.dart';
 import 'package:folio/features/manga_detail/manga_detail_page.dart';
 import 'package:folio/app/transitions.dart';
 import 'package:folio/shared/widgets/manga_card.dart';
+import 'package:folio/shared/widgets/manga_list_tile.dart';
 
 enum TriOption { aucun, titreAZ, titreZA, meilleureNote, moinsNote, plusChapitres, moinsChapitres }
 
@@ -235,7 +236,7 @@ class _LibraryPage extends ConsumerState<LibraryPage> {
                                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                                 children: [
                                   Text('${_filtreChapitres.start.toInt()}', style: const TextStyle(fontSize: 12)),
-                                  Text('${_filtreChapitres.end.toInt()}', style: const TextStyle(fontSize: 12)),
+                                  Text(_filtreChapitres.end >= 1000 ? '1000+' : '${_filtreChapitres.end.toInt()}', style: const TextStyle(fontSize: 12)),
                                 ],
                               ),
                               RangeSlider(
@@ -245,7 +246,7 @@ class _LibraryPage extends ConsumerState<LibraryPage> {
                                 divisions: 100,
                                 labels: RangeLabels(
                                   _filtreChapitres.start.toInt().toString(),
-                                  _filtreChapitres.end.toInt().toString(),
+                                  _filtreChapitres.end >= 1000 ? '1000+' : _filtreChapitres.end.toInt().toString(),
                                 ),
                                 onChanged: (v) {
                                   setState(() => _filtreChapitres = v);
@@ -286,12 +287,22 @@ class _LibraryPage extends ConsumerState<LibraryPage> {
               icon: const Icon(Icons.close),
               label: const Text('Annuler'),
             )
-          else
+          else ...[
+            IconButton(
+              tooltip: 'Changer de vue',
+              onPressed: () => ref.read(viewModeProvider.notifier).suivant(),
+              icon: Icon(switch (ref.watch(viewModeProvider)) {
+                ViewMode.grille => Icons.grid_view_rounded,
+                ViewMode.liste => Icons.view_agenda_outlined,
+                ViewMode.compact => Icons.view_headline_rounded,
+              }),
+            ),
             Badge(
               isLabelVisible: _filtresActifs > 0,
               label: Text('$_filtresActifs'),
               child: IconButton(onPressed: _showFiltres, icon: const Icon(Icons.tune)),
             ),
+          ],
         ],
         bottom: PreferredSize(
           preferredSize: Size.fromHeight(_modeSelection ? 96 : 56),
@@ -377,9 +388,7 @@ class _LibraryPage extends ConsumerState<LibraryPage> {
                     style: TextButton.styleFrom(foregroundColor: AppColors.danger),
                     onPressed: () async {
                       final dao = ref.read(mangaDaoProvider);
-                      for (final manga in _mangaSelectionne) {
-                        await dao.deleteManga(manga.id);
-                      }
+                      await dao.deleteMangas(_mangaSelectionne.map((m) => m.id).toList());
                       ref.invalidate(mangasProvider);
                       setState(() {
                         _mangaSelectionne.clear();
@@ -419,7 +428,10 @@ class _LibraryPage extends ConsumerState<LibraryPage> {
             if (_filtreType != null && m.typeManga != _filtreType) return false;
             if (_filtreFavori != null && m.estFavori != _filtreFavori) return false;
             if (m.note < _filtreNote.start || m.note > _filtreNote.end) return false;
-            if (m.chapitres < _filtreChapitres.start || m.chapitres > _filtreChapitres.end) return false;
+            // La borne haute n'est appliquée que si l'utilisateur l'a déplacée :
+            // sinon un manga à 1000+ chapitres serait masqué par défaut.
+            if (m.chapitres < _filtreChapitres.start) return false;
+            if (_filtreChapitres.end < 1000 && m.chapitres > _filtreChapitres.end) return false;
             return true;
           }).toList();
 
@@ -474,68 +486,97 @@ class _LibraryPage extends ConsumerState<LibraryPage> {
                   ),
                 )
               else
-                Expanded(
-                  child: GridView.builder(
-                    padding: const EdgeInsets.fromLTRB(12, 4, 12, 80),
-                    gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-                      crossAxisCount: 2,
-                      childAspectRatio: 0.72,
-                      crossAxisSpacing: 10,
-                      mainAxisSpacing: 10,
-                    ),
-                    itemCount: listeFiltree.length,
-                    itemBuilder: (context, index) {
-                      final manga = listeFiltree[index];
-                      final isSelected = _mangaSelectionne.contains(manga);
-                      return InkWell(
-                        borderRadius: BorderRadius.circular(12),
-                        onLongPress: () {
-                          setState(() {
-                            _modeSelection = true;
-                            _mangaSelectionne.add(manga);
-                          });
-                        },
-                        onTap: () {
-                          if (!_modeSelection) {
-                            Navigator.push(
-                              context,
-                              fadeScaleRoute(MangaDetailPage(mangaData: manga)),
-                            );
-                          } else {
-                            setState(() {
-                              if (isSelected) {
-                                _mangaSelectionne.remove(manga);
-                                if (_mangaSelectionne.isEmpty) _modeSelection = false;
-                              } else {
-                                _mangaSelectionne.add(manga);
-                              }
-                            });
-                          }
-                        },
-                        child: Stack(
-                          children: [
-                            MangaCard(mangaData: manga),
-                            if (isSelected)
-                              Positioned.fill(
-                                child: Container(
-                                  decoration: BoxDecoration(
-                                    color: Colors.black54,
-                                    borderRadius: BorderRadius.circular(12),
-                                  ),
-                                  child: const Center(
-                                    child: Icon(Icons.check_circle, color: Colors.white, size: 36),
-                                  ),
-                                ),
-                              ),
-                          ],
-                        ),
-                      );
-                    },
-                  ),
-                ),
+                Expanded(child: _buildContenu(listeFiltree, ref.watch(viewModeProvider))),
             ],
           );
         },
+      ),
+    );
+  }
+
+  /// Construit la liste selon le mode de vue choisi par l'utilisateur.
+  Widget _buildContenu(List<MangaTableData> liste, ViewMode mode) {
+    const padding = EdgeInsets.fromLTRB(12, 4, 12, 80);
+    switch (mode) {
+      case ViewMode.grille:
+        return GridView.builder(
+          padding: padding,
+          gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+            crossAxisCount: 2,
+            childAspectRatio: 0.72,
+            crossAxisSpacing: 10,
+            mainAxisSpacing: 10,
+          ),
+          itemCount: liste.length,
+          itemBuilder: (context, i) =>
+              _wrapItem(liste[i], MangaCard(mangaData: liste[i])),
+        );
+      case ViewMode.liste:
+        return ListView.separated(
+          padding: padding,
+          itemCount: liste.length,
+          separatorBuilder: (_, _) => const SizedBox(height: 8),
+          itemBuilder: (context, i) => _wrapItem(
+            liste[i],
+            MangaListTile(mangaData: liste[i], selectionActive: _modeSelection),
+          ),
+        );
+      case ViewMode.compact:
+        return ListView.separated(
+          padding: padding,
+          itemCount: liste.length,
+          separatorBuilder: (_, _) => const SizedBox(height: 6),
+          itemBuilder: (context, i) =>
+              _wrapItem(liste[i], MangaCompactTile(mangaData: liste[i])),
+        );
+    }
+  }
+
+  /// Gestes communs à toutes les vues : tap (détail ou sélection),
+  /// appui long (mode sélection), et voile de sélection.
+  Widget _wrapItem(MangaTableData manga, Widget child) {
+    final isSelected = _mangaSelectionne.contains(manga);
+    return InkWell(
+      borderRadius: BorderRadius.circular(12),
+      onLongPress: () {
+        setState(() {
+          _modeSelection = true;
+          _mangaSelectionne.add(manga);
+        });
+      },
+      onTap: () {
+        if (!_modeSelection) {
+          Navigator.push(
+            context,
+            fadeScaleRoute(MangaDetailPage(mangaData: manga)),
+          );
+        } else {
+          setState(() {
+            if (isSelected) {
+              _mangaSelectionne.remove(manga);
+              if (_mangaSelectionne.isEmpty) _modeSelection = false;
+            } else {
+              _mangaSelectionne.add(manga);
+            }
+          });
+        }
+      },
+      child: Stack(
+        children: [
+          child,
+          if (isSelected)
+            Positioned.fill(
+              child: Container(
+                decoration: BoxDecoration(
+                  color: Colors.black54,
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: const Center(
+                  child: Icon(Icons.check_circle, color: Colors.white, size: 36),
+                ),
+              ),
+            ),
+        ],
       ),
     );
   }

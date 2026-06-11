@@ -53,6 +53,7 @@ dev_dependencies:
   drift_dev: ^2.26.0
   build_runner: ^2.4.15
   flutter_launcher_icons: ^0.14.3
+  image: ^4.3.0
 
   flutter_test:
     sdk: flutter
@@ -82,7 +83,7 @@ flutter_launcher_icons:
   android: true
   ios: false
   image_path: "assets/splash/logo.png"
-  adaptive_icon_background: "#FFFFFF"
-  adaptive_icon_foreground: "assets/splash/logo.png"
+  adaptive_icon_background: "assets/splash/logo_background.png"
+  adaptive_icon_foreground: "assets/splash/logo_foreground.png"
   min_sdk_android: 21
 
