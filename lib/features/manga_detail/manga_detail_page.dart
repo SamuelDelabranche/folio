@@ -10,6 +10,8 @@ import 'package:folio/data/database/app_database.dart';
 import 'package:folio/data/database/daos/manga_dao.dart';
 import 'package:folio/data/models/lien.dart';
 import 'package:folio/features/manga_detail/lier_anilist_sheet.dart';
+import 'package:folio/services/anilist/anilist_client.dart';
+import 'package:folio/services/anilist/sync_service.dart';
 import 'package:folio/services/cover_service.dart';
 import 'package:folio/shared/widgets/lien_dialog.dart';
 import 'package:image_picker/image_picker.dart';
@@ -49,6 +51,7 @@ class _MangaDetailPage extends ConsumerState<MangaDetailPage> {
   late String _imageSource;
   int? _anilistId;
   DateTime? _lastSyncedAt;
+  bool _syncEnCours = false;
 
   @override
   void initState() {
@@ -129,6 +132,42 @@ class _MangaDetailPage extends ConsumerState<MangaDetailPage> {
     );
     if (!mounted) return;
     setState(() => _anilistId = resultat.id);
+  }
+
+  Future<void> _synchroniserMaintenant() async {
+    final messenger = ScaffoldMessenger.of(context);
+    setState(() => _syncEnCours = true);
+    try {
+      final actuel = await _dao.getManga(widget.mangaData.id);
+      if (actuel == null) return;
+      await ref.read(syncServiceProvider).syncOne(actuel);
+      final frais = await _dao.getManga(widget.mangaData.id);
+      if (!mounted || frais == null) return;
+      setState(() {
+        _descriptionController.text = frais.description ?? '';
+        _genreSelectionne = (frais.genre ?? '').isEmpty ? [] : frais.genre!.split(',');
+        _typeController = frais.typeManga;
+        _imagePath = frais.imagePath;
+        _imageSource = frais.imageSource;
+        _lastSyncedAt = frais.lastSyncedAt;
+      });
+      messenger.showSnackBar(SnackBar(
+        backgroundColor: AppColors.success,
+        content: const Text('Fiche synchronisée', textAlign: TextAlign.center, style: TextStyle(color: Colors.black87)),
+      ));
+    } on AnilistRateLimitException catch (e) {
+      messenger.showSnackBar(SnackBar(
+        backgroundColor: AppColors.info,
+        content: Text('AniList est saturé — réessaie dans ${e.retryAfter.inSeconds} s', textAlign: TextAlign.center, style: const TextStyle(color: Colors.black87)),
+      ));
+    } catch (_) {
+      messenger.showSnackBar(SnackBar(
+        backgroundColor: AppColors.danger,
+        content: const Text('Synchronisation impossible. Vérifie ta connexion.', textAlign: TextAlign.center, style: TextStyle(color: Colors.white)),
+      ));
+    } finally {
+      if (mounted) setState(() => _syncEnCours = false);
+    }
   }
 
   Future<void> _delier() async {
@@ -756,6 +795,28 @@ class _MangaDetailPage extends ConsumerState<MangaDetailPage> {
                                   child: Text(_anilistId != null ? 'Délier' : 'Lier'),
                                 ),
                               ),
+                              if (_anilistId != null)
+                                Padding(
+                                  padding: const EdgeInsets.fromLTRB(16, 0, 16, 8),
+                                  child: SizedBox(
+                                    width: double.infinity,
+                                    child: FilledButton.tonalIcon(
+                                      onPressed: _syncEnCours || !prefs.maitre
+                                          ? null
+                                          : _synchroniserMaintenant,
+                                      icon: _syncEnCours
+                                          ? const SizedBox(
+                                              width: 16,
+                                              height: 16,
+                                              child: CircularProgressIndicator(strokeWidth: 2),
+                                            )
+                                          : const Icon(Icons.sync, size: 18),
+                                      label: Text(_syncEnCours
+                                          ? 'Synchronisation…'
+                                          : 'Synchroniser maintenant'),
+                                    ),
+                                  ),
+                                ),
                               const Divider(height: 1, indent: 56),
                               _SyncToggleFiche(
                                 label: 'Image de couverture',

@@ -12,6 +12,9 @@ class MangaDao extends DatabaseAccessor<AppDatabase> with _$MangaDaoMixin {
 
   Stream<List<MangaTableData>> watchAllMangas() => select(mangaTable).watch();
 
+  Future<MangaTableData?> getManga(int id) =>
+      (select(mangaTable)..where((m) => m.id.equals(id))).getSingleOrNull();
+
   Future<int> insertManga(MangaTableCompanion manga) =>
       into(mangaTable).insert(manga);
 
