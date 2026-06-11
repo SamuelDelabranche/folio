@@ -10,6 +10,7 @@ import 'package:folio/data/database/app_database.dart';
 import 'package:folio/data/database/daos/manga_dao.dart';
 import 'package:folio/data/models/lien.dart';
 import 'package:folio/features/onboarding/onboarding_page.dart';
+import 'package:folio/services/cover_service.dart';
 import 'package:folio/services/update_service.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'package:package_info_plus/package_info_plus.dart';
@@ -238,6 +239,7 @@ class _SettingsPage extends ConsumerState<SettingsPage> {
               final messenger = ScaffoldMessenger.of(context);
               Navigator.pop(dialogContext);
               await _dao.deleteAllMangas();
+              await CoverService.toutSupprimer();
               messenger.showSnackBar(SnackBar(
                 backgroundColor: AppColors.success,
                 content: const Text('Bibliothèque effacée', textAlign: TextAlign.center, style: TextStyle(color: Colors.black87)),

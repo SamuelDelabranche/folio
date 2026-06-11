@@ -9,7 +9,9 @@ import 'package:folio/app/theme.dart';
 import 'package:folio/data/database/app_database.dart';
 import 'package:folio/data/database/daos/manga_dao.dart';
 import 'package:folio/data/models/lien.dart';
+import 'package:folio/services/cover_service.dart';
 import 'package:folio/shared/widgets/lien_dialog.dart';
+import 'package:image_picker/image_picker.dart';
 
 class MangaDetailPage extends ConsumerStatefulWidget {
   final MangaTableData mangaData;
@@ -44,6 +46,10 @@ class _MangaDetailPage extends ConsumerState<MangaDetailPage> {
   late bool _syncGenres;
   late bool _syncType;
 
+  // Image de couverture (modifiable depuis la fiche).
+  String? _imagePath;
+  late String _imageSource;
+
   @override
   void initState() {
     super.initState();
@@ -53,6 +59,8 @@ class _MangaDetailPage extends ConsumerState<MangaDetailPage> {
     _syncDescription = widget.mangaData.syncDescription;
     _syncGenres = widget.mangaData.syncGenres;
     _syncType = widget.mangaData.syncType;
+    _imagePath = widget.mangaData.imagePath;
+    _imageSource = widget.mangaData.imageSource;
     _titre = widget.mangaData.titre;
     _noteEdition = widget.mangaData.note;
     _titreController = TextEditingController(text: widget.mangaData.titre);
@@ -124,6 +132,115 @@ class _MangaDetailPage extends ConsumerState<MangaDetailPage> {
   Future<void> _setToggleSync(MangaTableCompanion companion) =>
       _dao.updateMangaByElement(widget.mangaData.id, companion);
 
+  /// Menu d'actions sur la cover (tap sur l'image du header).
+  void _ouvrirMenuImage() {
+    showModalBottomSheet(
+      context: context,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      builder: (sheetContext) => SafeArea(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            const SizedBox(height: 12),
+            ListTile(
+              leading: const Icon(Icons.photo_library_outlined),
+              title: const Text('Importer une image'),
+              subtitle: const Text('Choisir depuis la galerie'),
+              onTap: () {
+                Navigator.pop(sheetContext);
+                _importerImage();
+              },
+            ),
+            if (_imagePath != null)
+              ListTile(
+                leading: Icon(Icons.delete_outline, color: AppColors.danger),
+                title: Text('Supprimer l\'image', style: TextStyle(color: AppColors.danger)),
+                onTap: () {
+                  Navigator.pop(sheetContext);
+                  _supprimerImage();
+                },
+              ),
+            const SizedBox(height: 12),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Future<void> _importerImage() async {
+    final messenger = ScaffoldMessenger.of(context);
+    try {
+      final fichier = await ImagePicker().pickImage(source: ImageSource.gallery);
+      if (fichier == null) return;
+
+      // Garde-fou taille avant de charger le fichier en mémoire.
+      if (await fichier.length() > CoverService.tailleMaxOctets) {
+        throw const CoverInvalideException('Image trop volumineuse (max 10 Mo)');
+      }
+      final octets = await fichier.readAsBytes();
+      final chemin = await CoverService.installerCover(
+        octets,
+        'cover_${widget.mangaData.id}.jpg',
+      );
+
+      // Image personnalisée : on coupe la synchro de la cover pour ce manga
+      // (double verrou avec imageSource='utilisateur', voir ANILIST_SYNC.md).
+      await _dao.updateMangaByElement(
+        widget.mangaData.id,
+        MangaTableCompanion(
+          imagePath: Value(chemin),
+          imageSource: const Value('utilisateur'),
+          syncImage: const Value(false),
+        ),
+      );
+      if (!mounted) return;
+      setState(() {
+        _imagePath = chemin;
+        _imageSource = 'utilisateur';
+        _syncImage = false;
+      });
+      // L'image a changé sur disque mais garde le même chemin : on vide le
+      // cache pour que le header affiche la nouvelle version.
+      FileImage(File(chemin)).evict();
+      messenger.showSnackBar(SnackBar(
+        backgroundColor: AppColors.info,
+        content: const Text(
+          'Image personnalisée — la synchro de la cover est désactivée pour ce manga',
+          textAlign: TextAlign.center,
+          style: TextStyle(color: Colors.black87),
+        ),
+      ));
+    } on CoverInvalideException catch (e) {
+      messenger.showSnackBar(SnackBar(
+        backgroundColor: AppColors.danger,
+        content: Text(e.message, textAlign: TextAlign.center, style: const TextStyle(color: Colors.white)),
+      ));
+    } catch (_) {
+      messenger.showSnackBar(SnackBar(
+        backgroundColor: AppColors.danger,
+        content: const Text("Impossible d'importer cette image", textAlign: TextAlign.center, style: TextStyle(color: Colors.white)),
+      ));
+    }
+  }
+
+  Future<void> _supprimerImage() async {
+    await CoverService.supprimerCover(_imagePath);
+    await _dao.updateMangaByElement(
+      widget.mangaData.id,
+      const MangaTableCompanion(
+        imagePath: Value(null),
+        imageSource: Value('aucune'),
+      ),
+    );
+    if (!mounted) return;
+    setState(() {
+      _imagePath = null;
+      _imageSource = 'aucune';
+    });
+  }
+
   String _formatDate(DateTime d) {
     String deux(int n) => n.toString().padLeft(2, '0');
     return '${deux(d.day)}/${deux(d.month)}/${d.year} à ${deux(d.hour)}h${deux(d.minute)}';
@@ -194,6 +311,7 @@ class _MangaDetailPage extends ConsumerState<MangaDetailPage> {
                       TextButton(
                         style: TextButton.styleFrom(foregroundColor: AppColors.danger),
                         onPressed: () async {
+                          await CoverService.supprimerCover(_imagePath);
                           await _dao.deleteManga(widget.mangaData.id);
                           messenger.showSnackBar(SnackBar(
                             backgroundColor: AppColors.success,
@@ -217,23 +335,57 @@ class _MangaDetailPage extends ConsumerState<MangaDetailPage> {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
 
-              // ── Header image ──
+              // ── Header image (tap = changer la cover) ──
               Stack(
                 children: [
-                  widget.mangaData.imagePath != null
-                      ? Image.file(File(widget.mangaData.imagePath!), fit: BoxFit.cover, width: double.infinity, height: 260)
-                      : Container(
-                          color: AppColors.pastels[widget.mangaData.id % AppColors.pastels.length],
-                          height: 260,
-                          width: double.infinity,
-                        ),
+                  GestureDetector(
+                    onTap: _ouvrirMenuImage,
+                    child: _imagePath != null
+                        ? Image.file(
+                            File(_imagePath!),
+                            fit: BoxFit.cover,
+                            width: double.infinity,
+                            height: 260,
+                            errorBuilder: (_, _, _) => Container(
+                              color: AppColors.pastels[widget.mangaData.id % AppColors.pastels.length],
+                              height: 260,
+                              width: double.infinity,
+                            ),
+                          )
+                        : Container(
+                            color: AppColors.pastels[widget.mangaData.id % AppColors.pastels.length],
+                            height: 260,
+                            width: double.infinity,
+                          ),
+                  ),
+                  // IgnorePointer : sans lui, le dégradé absorberait les taps
+                  // destinés à l'image en dessous.
                   Positioned.fill(
-                    child: DecoratedBox(
-                      decoration: BoxDecoration(
-                        gradient: LinearGradient(
-                          begin: Alignment.topCenter,
-                          end: Alignment.bottomCenter,
-                          colors: [Colors.transparent, Colors.black87],
+                    child: IgnorePointer(
+                      child: DecoratedBox(
+                        decoration: BoxDecoration(
+                          gradient: LinearGradient(
+                            begin: Alignment.topCenter,
+                            end: Alignment.bottomCenter,
+                            colors: [Colors.transparent, Colors.black87],
+                          ),
+                        ),
+                      ),
+                    ),
+                  ),
+                  // Pastille « changer la cover »
+                  Positioned(
+                    top: 12,
+                    right: 12,
+                    child: Material(
+                      color: Colors.black45,
+                      shape: const CircleBorder(),
+                      child: InkWell(
+                        customBorder: const CircleBorder(),
+                        onTap: _ouvrirMenuImage,
+                        child: const Padding(
+                          padding: EdgeInsets.all(8),
+                          child: Icon(Icons.photo_camera_outlined, color: Colors.white, size: 20),
                         ),
                       ),
                     ),
@@ -612,6 +764,9 @@ class _MangaDetailPage extends ConsumerState<MangaDetailPage> {
                                 label: 'Image de couverture',
                                 value: _syncImage,
                                 globalActif: prefs.maitre && prefs.image,
+                                note: _imageSource == 'utilisateur'
+                                    ? 'Image personnalisée — jamais écrasée par la synchro'
+                                    : null,
                                 onChanged: (v) {
                                   setState(() => _syncImage = v);
                                   _setToggleSync(MangaTableCompanion(syncImage: Value(v)));
@@ -668,6 +823,7 @@ class _SyncToggleFiche extends StatelessWidget {
   final String label;
   final bool value;
   final bool globalActif;
+  final String? note;
   final ValueChanged<bool> onChanged;
 
   const _SyncToggleFiche({
@@ -675,17 +831,19 @@ class _SyncToggleFiche extends StatelessWidget {
     required this.value,
     required this.globalActif,
     required this.onChanged,
+    this.note,
   });
 
   @override
   Widget build(BuildContext context) {
+    final sousTitre = !globalActif ? 'Désactivé globalement (Paramètres)' : note;
     return SwitchListTile(
       dense: true,
       contentPadding: const EdgeInsets.only(left: 56, right: 16),
       title: Text(label, style: const TextStyle(fontSize: 14)),
-      subtitle: globalActif
+      subtitle: sousTitre == null
           ? null
-          : const Text('Désactivé globalement (Paramètres)', style: TextStyle(fontSize: 11)),
+          : Text(sousTitre, style: const TextStyle(fontSize: 11)),
       value: value,
       onChanged: globalActif ? onChanged : null,
     );

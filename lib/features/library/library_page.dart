@@ -6,6 +6,7 @@ import 'package:folio/data/database/app_database.dart';
 import 'package:folio/features/add_Manga/add_manga_page.dart';
 import 'package:folio/features/manga_detail/manga_detail_page.dart';
 import 'package:folio/app/transitions.dart';
+import 'package:folio/services/cover_service.dart';
 import 'package:folio/shared/widgets/manga_card.dart';
 import 'package:folio/shared/widgets/manga_list_tile.dart';
 
@@ -388,6 +389,9 @@ class _LibraryPage extends ConsumerState<LibraryPage> {
                     style: TextButton.styleFrom(foregroundColor: AppColors.danger),
                     onPressed: () async {
                       final dao = ref.read(mangaDaoProvider);
+                      for (final m in _mangaSelectionne) {
+                        await CoverService.supprimerCover(m.imagePath);
+                      }
                       await dao.deleteMangas(_mangaSelectionne.map((m) => m.id).toList());
                       setState(() {
                         _mangaSelectionne.clear();

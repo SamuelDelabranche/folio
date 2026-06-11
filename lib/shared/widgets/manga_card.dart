@@ -1,3 +1,5 @@
+import 'dart:io';
+
 import 'package:flutter/material.dart';
 import 'package:folio/app/theme.dart';
 import 'package:folio/data/database/app_database.dart';
@@ -19,11 +21,25 @@ class MangaCard extends StatelessWidget {
           Expanded(
             child: Stack(
               children: [
-                Container(
-                  color: AppColors.pastels[mangaData.id % AppColors.pastels.length],
-                  width: double.infinity,
-                  height: double.infinity,
-                ),
+                // Cover réelle si présente, sinon placeholder pastel.
+                // errorBuilder : un chemin pointant vers un fichier disparu
+                // ne doit jamais casser la grille.
+                if (mangaData.imagePath != null)
+                  Positioned.fill(
+                    child: Image.file(
+                      File(mangaData.imagePath!),
+                      fit: BoxFit.cover,
+                      errorBuilder: (_, _, _) => Container(
+                        color: AppColors.pastels[mangaData.id % AppColors.pastels.length],
+                      ),
+                    ),
+                  )
+                else
+                  Container(
+                    color: AppColors.pastels[mangaData.id % AppColors.pastels.length],
+                    width: double.infinity,
+                    height: double.infinity,
+                  ),
                 Positioned(
                   top: 8,
                   left: 8,

@@ -1,3 +1,5 @@
+import 'dart:io';
+
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:drift/drift.dart' hide Column;
@@ -39,23 +41,22 @@ class MangaListTile extends ConsumerWidget {
         padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
         child: Row(
           children: [
-            // Vignette pastel + initiale (remplacée par la cover AniList plus tard)
-            Container(
-              width: 46,
-              height: 62,
-              decoration: BoxDecoration(
-                color: pastel,
-                borderRadius: BorderRadius.circular(8),
-              ),
-              child: Center(
-                child: Text(
-                  mangaData.titre.isEmpty ? '?' : mangaData.titre[0].toUpperCase(),
-                  style: const TextStyle(
-                    fontSize: 22,
-                    fontWeight: FontWeight.bold,
-                    color: Colors.black54,
-                  ),
-                ),
+            // Vignette : cover réelle si présente, sinon pastel + initiale.
+            ClipRRect(
+              borderRadius: BorderRadius.circular(8),
+              child: SizedBox(
+                width: 46,
+                height: 62,
+                child: mangaData.imagePath != null
+                    ? Image.file(
+                        File(mangaData.imagePath!),
+                        fit: BoxFit.cover,
+                        errorBuilder: (_, _, _) => _VignettePastel(
+                          pastel: pastel,
+                          titre: mangaData.titre,
+                        ),
+                      )
+                    : _VignettePastel(pastel: pastel, titre: mangaData.titre),
               ),
             ),
             const SizedBox(width: 12),
@@ -129,6 +130,30 @@ class MangaListTile extends ConsumerWidget {
               ),
             ],
           ],
+        ),
+      ),
+    );
+  }
+}
+
+class _VignettePastel extends StatelessWidget {
+  final Color pastel;
+  final String titre;
+
+  const _VignettePastel({required this.pastel, required this.titre});
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      color: pastel,
+      child: Center(
+        child: Text(
+          titre.isEmpty ? '?' : titre[0].toUpperCase(),
+          style: const TextStyle(
+            fontSize: 22,
+            fontWeight: FontWeight.bold,
+            color: Colors.black54,
+          ),
         ),
       ),
     );
