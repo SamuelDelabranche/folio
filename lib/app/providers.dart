@@ -70,6 +70,7 @@ class SyncPrefs {
   final bool description;
   final bool genres;
   final bool type;
+  final bool mangadex;
 
   const SyncPrefs({
     this.maitre = true,
@@ -77,15 +78,17 @@ class SyncPrefs {
     this.description = true,
     this.genres = true,
     this.type = true,
+    this.mangadex = true,
   });
 
-  SyncPrefs copyWith({bool? maitre, bool? image, bool? description, bool? genres, bool? type}) {
+  SyncPrefs copyWith({bool? maitre, bool? image, bool? description, bool? genres, bool? type, bool? mangadex}) {
     return SyncPrefs(
       maitre: maitre ?? this.maitre,
       image: image ?? this.image,
       description: description ?? this.description,
       genres: genres ?? this.genres,
       type: type ?? this.type,
+      mangadex: mangadex ?? this.mangadex,
     );
   }
 }
@@ -99,6 +102,7 @@ class SyncPrefsNotifier extends Notifier<SyncPrefs> {
     'description': 'sync_description_global',
     'genres': 'sync_genres_global',
     'type': 'sync_type_global',
+    'mangadex': 'sync_mangadex_global',
   };
 
   @override
@@ -114,6 +118,7 @@ class SyncPrefsNotifier extends Notifier<SyncPrefs> {
   Future<void> setDescription(bool v) async { state = state.copyWith(description: v); await _save('description', v); }
   Future<void> setGenres(bool v) async { state = state.copyWith(genres: v); await _save('genres', v); }
   Future<void> setType(bool v) async { state = state.copyWith(type: v); await _save('type', v); }
+  Future<void> setMangadex(bool v) async { state = state.copyWith(mangadex: v); await _save('mangadex', v); }
 
   Future<void> load() async {
     final prefs = await SharedPreferences.getInstance();
@@ -123,6 +128,7 @@ class SyncPrefsNotifier extends Notifier<SyncPrefs> {
       description: prefs.getBool(_keys['description']!) ?? true,
       genres: prefs.getBool(_keys['genres']!) ?? true,
       type: prefs.getBool(_keys['type']!) ?? true,
+      mangadex: prefs.getBool(_keys['mangadex']!) ?? true,
     );
   }
 }

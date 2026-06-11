@@ -10,11 +10,13 @@ import 'package:folio/data/database/app_database.dart';
 import 'package:folio/services/cover_service.dart';
 import 'package:folio/services/anilist/anilist_client.dart';
 import 'package:folio/services/anilist/anilist_models.dart';
+import 'package:folio/services/mangadex/mangadex_client.dart';
 
 bool urlCoverAutorisee(String url) {
   final uri = Uri.tryParse(url);
   if (uri == null || uri.scheme != 'https' || uri.host.isEmpty) return false;
-  return uri.host == 'anilist.co' || uri.host.endsWith('.anilist.co');
+  if (uri.host == 'anilist.co' || uri.host.endsWith('.anilist.co')) return true;
+  return uri.host == 'uploads.mangadex.org';
 }
 
 final syncServiceProvider = Provider<SyncService>((ref) => SyncService(ref));
@@ -22,9 +24,12 @@ final syncServiceProvider = Provider<SyncService>((ref) => SyncService(ref));
 class SyncService {
   final Ref _ref;
   final AnilistClient client;
+  final MangadexClient mangadex;
 
-  SyncService(this._ref, [AnilistClient? clientInjecte])
-      : client = clientInjecte ?? AnilistClient();
+  SyncService(this._ref,
+      [AnilistClient? clientInjecte, MangadexClient? mangadexInjecte])
+      : client = clientInjecte ?? AnilistClient(),
+        mangadex = mangadexInjecte ?? MangadexClient();
 
   Future<bool> lierAuto(MangaTableData manga) async {
     if (manga.anilistId != null) return true;
@@ -46,11 +51,20 @@ class SyncService {
     final media = await client.fetchById(manga.anilistId!);
     var companion = MangaTableCompanion(lastSyncedAt: Value(DateTime.now()));
 
-    if (prefs.description &&
-        manga.syncDescription &&
-        media.description != null &&
-        media.description!.isNotEmpty) {
-      companion = companion.copyWith(description: Value(media.description));
+    MangadexManga? md;
+    if (prefs.mangadex && prefs.description && manga.syncDescription) {
+      try {
+        md = await mangadex.chercher(manga.titre);
+      } catch (_) {
+        md = null;
+      }
+    }
+
+    if (prefs.description && manga.syncDescription) {
+      final description = md?.descriptionFr ?? media.description;
+      if (description != null && description.isNotEmpty) {
+        companion = companion.copyWith(description: Value(description));
+      }
     }
     if (prefs.genres && manga.syncGenres && media.genresFolio.isNotEmpty) {
       companion = companion.copyWith(genre: Value(media.genresFolio.join(',')));
@@ -60,16 +74,21 @@ class SyncService {
     }
     if (prefs.image &&
         manga.syncImage &&
-        manga.imageSource != 'utilisateur' &&
-        media.coverUrl != null &&
-        urlCoverAutorisee(media.coverUrl!)) {
-      final chemin = await _telechargerCover(media.coverUrl!, manga.anilistId!);
-      if (chemin != null) {
-        companion = companion.copyWith(
-          imagePath: Value(chemin),
-          imageSource: const Value('anilist'),
-        );
-        await FileImage(File(chemin)).evict();
+        manga.imageSource != 'utilisateur') {
+      var coverUrl = media.coverUrl;
+      if ((coverUrl == null || !urlCoverAutorisee(coverUrl)) &&
+          md?.coverUrl != null) {
+        coverUrl = md!.coverUrl;
+      }
+      if (coverUrl != null && urlCoverAutorisee(coverUrl)) {
+        final chemin = await _telechargerCover(coverUrl, manga.anilistId!);
+        if (chemin != null) {
+          companion = companion.copyWith(
+            imagePath: Value(chemin),
+            imageSource: const Value('anilist'),
+          );
+          await FileImage(File(chemin)).evict();
+        }
       }
     }
 

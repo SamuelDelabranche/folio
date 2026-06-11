@@ -528,6 +528,12 @@ class _SettingsPage extends ConsumerState<SettingsPage> {
                         enabled: sync.maitre,
                         onChanged: notifier.setType,
                       ),
+                      _SyncFieldSwitch(
+                        label: 'Descriptions en français (MangaDex)',
+                        value: sync.mangadex,
+                        enabled: sync.maitre && sync.description,
+                        onChanged: notifier.setMangadex,
+                      ),
                       const Divider(height: 1, indent: 68),
                       Consumer(
                         builder: (context, ref, _) {
@@ -556,7 +562,8 @@ class _SettingsPage extends ConsumerState<SettingsPage> {
                           alignment: Alignment.centerLeft,
                           child: Text(
                             'Chaque manga peut aussi désactiver ces champs '
-                            'individuellement dans sa fiche. Données fournies par AniList.',
+                            'individuellement dans sa fiche. Données fournies '
+                            'par AniList et MangaDex.',
                             style: TextStyle(fontSize: 12, color: Colors.grey),
                           ),
                         ),
