@@ -62,6 +62,13 @@ class _SettingsPage extends ConsumerState<SettingsPage> {
         'note': manga.note,
         'chapitres': manga.chapitres,
         'liens': manga.liens,
+        'anilistId': manga.anilistId,
+        'lastSyncedAt': manga.lastSyncedAt?.toIso8601String(),
+        'syncImage': manga.syncImage,
+        'syncDescription': manga.syncDescription,
+        'syncGenres': manga.syncGenres,
+        'syncType': manga.syncType,
+        'imageSource': manga.imageSource,
       }).toList();
 
       final dossier = await getTemporaryDirectory();
@@ -181,7 +188,7 @@ class _SettingsPage extends ConsumerState<SettingsPage> {
       if (info == null) {
         messenger.showSnackBar(SnackBar(
           backgroundColor: AppColors.success,
-          content: const Text('Folio est à jour 🎉', textAlign: TextAlign.center, style: TextStyle(color: Colors.black87)),
+          content: const Text('Folio est à jour', textAlign: TextAlign.center, style: TextStyle(color: Colors.black87)),
         ));
       } else {
         messenger.showSnackBar(SnackBar(
@@ -264,10 +271,29 @@ class _SettingsPage extends ConsumerState<SettingsPage> {
       liensJson = liensToJson(liens);
     }
 
+    // Champs synchro (schéma v4) — tolérés absents pour que les anciennes
+    // sauvegardes restent importables.
+    final anilistId = (item['anilistId'] as num?)?.toInt();
+    final lastSyncedAt = item['lastSyncedAt'] is String
+        ? DateTime.tryParse(item['lastSyncedAt'] as String)
+        : null;
+
+    // Un chemin d'image vient d'un autre appareil dans la plupart des cas :
+    // on ne le garde que si le fichier existe réellement ici.
+    String? imagePath = item['imagePath'] as String?;
+    if (imagePath != null && !File(imagePath).existsSync()) {
+      imagePath = null;
+    }
+    var imageSource = item['imageSource'] as String?;
+    if (!const ['aucune', 'utilisateur', 'anilist'].contains(imageSource)) {
+      imageSource = imagePath != null ? 'utilisateur' : 'aucune';
+    }
+    if (imagePath == null) imageSource = 'aucune';
+
     return MangaTableCompanion(
       titre: Value(titre.trim()),
       description: Value(item['description'] as String?),
-      imagePath: Value(item['imagePath'] as String?),
+      imagePath: Value(imagePath),
       status: Value(item['status'] as String? ?? 'À lire'),
       genre: Value(item['genre'] as String?),
       typeManga: Value(item['typeManga'] as String? ?? 'Manga'),
@@ -275,6 +301,13 @@ class _SettingsPage extends ConsumerState<SettingsPage> {
       note: Value(note),
       chapitres: Value(chapitres),
       liens: Value(liensJson),
+      anilistId: Value(anilistId),
+      lastSyncedAt: Value(lastSyncedAt),
+      syncImage: Value(item['syncImage'] as bool? ?? true),
+      syncDescription: Value(item['syncDescription'] as bool? ?? true),
+      syncGenres: Value(item['syncGenres'] as bool? ?? true),
+      syncType: Value(item['syncType'] as bool? ?? true),
+      imageSource: Value(imageSource!),
     );
   }
 

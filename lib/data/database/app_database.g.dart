@@ -125,6 +125,100 @@ class $MangaTableTable extends MangaTable
     type: DriftSqlType.string,
     requiredDuringInsert: false,
   );
+  static const VerificationMeta _anilistIdMeta = const VerificationMeta(
+    'anilistId',
+  );
+  @override
+  late final GeneratedColumn<int> anilistId = GeneratedColumn<int>(
+    'anilist_id',
+    aliasedName,
+    true,
+    type: DriftSqlType.int,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _lastSyncedAtMeta = const VerificationMeta(
+    'lastSyncedAt',
+  );
+  @override
+  late final GeneratedColumn<DateTime> lastSyncedAt = GeneratedColumn<DateTime>(
+    'last_synced_at',
+    aliasedName,
+    true,
+    type: DriftSqlType.dateTime,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _syncImageMeta = const VerificationMeta(
+    'syncImage',
+  );
+  @override
+  late final GeneratedColumn<bool> syncImage = GeneratedColumn<bool>(
+    'sync_image',
+    aliasedName,
+    false,
+    type: DriftSqlType.bool,
+    requiredDuringInsert: false,
+    defaultConstraints: GeneratedColumn.constraintIsAlways(
+      'CHECK ("sync_image" IN (0, 1))',
+    ),
+    defaultValue: const Constant(true),
+  );
+  static const VerificationMeta _syncDescriptionMeta = const VerificationMeta(
+    'syncDescription',
+  );
+  @override
+  late final GeneratedColumn<bool> syncDescription = GeneratedColumn<bool>(
+    'sync_description',
+    aliasedName,
+    false,
+    type: DriftSqlType.bool,
+    requiredDuringInsert: false,
+    defaultConstraints: GeneratedColumn.constraintIsAlways(
+      'CHECK ("sync_description" IN (0, 1))',
+    ),
+    defaultValue: const Constant(true),
+  );
+  static const VerificationMeta _syncGenresMeta = const VerificationMeta(
+    'syncGenres',
+  );
+  @override
+  late final GeneratedColumn<bool> syncGenres = GeneratedColumn<bool>(
+    'sync_genres',
+    aliasedName,
+    false,
+    type: DriftSqlType.bool,
+    requiredDuringInsert: false,
+    defaultConstraints: GeneratedColumn.constraintIsAlways(
+      'CHECK ("sync_genres" IN (0, 1))',
+    ),
+    defaultValue: const Constant(true),
+  );
+  static const VerificationMeta _syncTypeMeta = const VerificationMeta(
+    'syncType',
+  );
+  @override
+  late final GeneratedColumn<bool> syncType = GeneratedColumn<bool>(
+    'sync_type',
+    aliasedName,
+    false,
+    type: DriftSqlType.bool,
+    requiredDuringInsert: false,
+    defaultConstraints: GeneratedColumn.constraintIsAlways(
+      'CHECK ("sync_type" IN (0, 1))',
+    ),
+    defaultValue: const Constant(true),
+  );
+  static const VerificationMeta _imageSourceMeta = const VerificationMeta(
+    'imageSource',
+  );
+  @override
+  late final GeneratedColumn<String> imageSource = GeneratedColumn<String>(
+    'image_source',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+    defaultValue: const Constant('aucune'),
+  );
   @override
   List<GeneratedColumn> get $columns => [
     id,
@@ -138,6 +232,13 @@ class $MangaTableTable extends MangaTable
     note,
     chapitres,
     liens,
+    anilistId,
+    lastSyncedAt,
+    syncImage,
+    syncDescription,
+    syncGenres,
+    syncType,
+    imageSource,
   ];
   @override
   String get aliasedName => _alias ?? actualTableName;
@@ -229,6 +330,57 @@ class $MangaTableTable extends MangaTable
         liens.isAcceptableOrUnknown(data['liens']!, _liensMeta),
       );
     }
+    if (data.containsKey('anilist_id')) {
+      context.handle(
+        _anilistIdMeta,
+        anilistId.isAcceptableOrUnknown(data['anilist_id']!, _anilistIdMeta),
+      );
+    }
+    if (data.containsKey('last_synced_at')) {
+      context.handle(
+        _lastSyncedAtMeta,
+        lastSyncedAt.isAcceptableOrUnknown(
+          data['last_synced_at']!,
+          _lastSyncedAtMeta,
+        ),
+      );
+    }
+    if (data.containsKey('sync_image')) {
+      context.handle(
+        _syncImageMeta,
+        syncImage.isAcceptableOrUnknown(data['sync_image']!, _syncImageMeta),
+      );
+    }
+    if (data.containsKey('sync_description')) {
+      context.handle(
+        _syncDescriptionMeta,
+        syncDescription.isAcceptableOrUnknown(
+          data['sync_description']!,
+          _syncDescriptionMeta,
+        ),
+      );
+    }
+    if (data.containsKey('sync_genres')) {
+      context.handle(
+        _syncGenresMeta,
+        syncGenres.isAcceptableOrUnknown(data['sync_genres']!, _syncGenresMeta),
+      );
+    }
+    if (data.containsKey('sync_type')) {
+      context.handle(
+        _syncTypeMeta,
+        syncType.isAcceptableOrUnknown(data['sync_type']!, _syncTypeMeta),
+      );
+    }
+    if (data.containsKey('image_source')) {
+      context.handle(
+        _imageSourceMeta,
+        imageSource.isAcceptableOrUnknown(
+          data['image_source']!,
+          _imageSourceMeta,
+        ),
+      );
+    }
     return context;
   }
 
@@ -282,6 +434,34 @@ class $MangaTableTable extends MangaTable
         DriftSqlType.string,
         data['${effectivePrefix}liens'],
       ),
+      anilistId: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}anilist_id'],
+      ),
+      lastSyncedAt: attachedDatabase.typeMapping.read(
+        DriftSqlType.dateTime,
+        data['${effectivePrefix}last_synced_at'],
+      ),
+      syncImage: attachedDatabase.typeMapping.read(
+        DriftSqlType.bool,
+        data['${effectivePrefix}sync_image'],
+      )!,
+      syncDescription: attachedDatabase.typeMapping.read(
+        DriftSqlType.bool,
+        data['${effectivePrefix}sync_description'],
+      )!,
+      syncGenres: attachedDatabase.typeMapping.read(
+        DriftSqlType.bool,
+        data['${effectivePrefix}sync_genres'],
+      )!,
+      syncType: attachedDatabase.typeMapping.read(
+        DriftSqlType.bool,
+        data['${effectivePrefix}sync_type'],
+      )!,
+      imageSource: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}image_source'],
+      )!,
     );
   }
 
@@ -303,6 +483,16 @@ class MangaTableData extends DataClass implements Insertable<MangaTableData> {
   final double note;
   final double chapitres;
   final String? liens;
+  final int? anilistId;
+  final DateTime? lastSyncedAt;
+  final bool syncImage;
+  final bool syncDescription;
+  final bool syncGenres;
+  final bool syncType;
+
+  /// Provenance de l'image : 'aucune' | 'utilisateur' | 'anilist'.
+  /// Une image 'utilisateur' n'est jamais écrasée par la synchro.
+  final String imageSource;
   const MangaTableData({
     required this.id,
     required this.titre,
@@ -315,6 +505,13 @@ class MangaTableData extends DataClass implements Insertable<MangaTableData> {
     required this.note,
     required this.chapitres,
     this.liens,
+    this.anilistId,
+    this.lastSyncedAt,
+    required this.syncImage,
+    required this.syncDescription,
+    required this.syncGenres,
+    required this.syncType,
+    required this.imageSource,
   });
   @override
   Map<String, Expression> toColumns(bool nullToAbsent) {
@@ -338,6 +535,17 @@ class MangaTableData extends DataClass implements Insertable<MangaTableData> {
     if (!nullToAbsent || liens != null) {
       map['liens'] = Variable<String>(liens);
     }
+    if (!nullToAbsent || anilistId != null) {
+      map['anilist_id'] = Variable<int>(anilistId);
+    }
+    if (!nullToAbsent || lastSyncedAt != null) {
+      map['last_synced_at'] = Variable<DateTime>(lastSyncedAt);
+    }
+    map['sync_image'] = Variable<bool>(syncImage);
+    map['sync_description'] = Variable<bool>(syncDescription);
+    map['sync_genres'] = Variable<bool>(syncGenres);
+    map['sync_type'] = Variable<bool>(syncType);
+    map['image_source'] = Variable<String>(imageSource);
     return map;
   }
 
@@ -362,6 +570,17 @@ class MangaTableData extends DataClass implements Insertable<MangaTableData> {
       liens: liens == null && nullToAbsent
           ? const Value.absent()
           : Value(liens),
+      anilistId: anilistId == null && nullToAbsent
+          ? const Value.absent()
+          : Value(anilistId),
+      lastSyncedAt: lastSyncedAt == null && nullToAbsent
+          ? const Value.absent()
+          : Value(lastSyncedAt),
+      syncImage: Value(syncImage),
+      syncDescription: Value(syncDescription),
+      syncGenres: Value(syncGenres),
+      syncType: Value(syncType),
+      imageSource: Value(imageSource),
     );
   }
 
@@ -382,6 +601,13 @@ class MangaTableData extends DataClass implements Insertable<MangaTableData> {
       note: serializer.fromJson<double>(json['note']),
       chapitres: serializer.fromJson<double>(json['chapitres']),
       liens: serializer.fromJson<String?>(json['liens']),
+      anilistId: serializer.fromJson<int?>(json['anilistId']),
+      lastSyncedAt: serializer.fromJson<DateTime?>(json['lastSyncedAt']),
+      syncImage: serializer.fromJson<bool>(json['syncImage']),
+      syncDescription: serializer.fromJson<bool>(json['syncDescription']),
+      syncGenres: serializer.fromJson<bool>(json['syncGenres']),
+      syncType: serializer.fromJson<bool>(json['syncType']),
+      imageSource: serializer.fromJson<String>(json['imageSource']),
     );
   }
   @override
@@ -399,6 +625,13 @@ class MangaTableData extends DataClass implements Insertable<MangaTableData> {
       'note': serializer.toJson<double>(note),
       'chapitres': serializer.toJson<double>(chapitres),
       'liens': serializer.toJson<String?>(liens),
+      'anilistId': serializer.toJson<int?>(anilistId),
+      'lastSyncedAt': serializer.toJson<DateTime?>(lastSyncedAt),
+      'syncImage': serializer.toJson<bool>(syncImage),
+      'syncDescription': serializer.toJson<bool>(syncDescription),
+      'syncGenres': serializer.toJson<bool>(syncGenres),
+      'syncType': serializer.toJson<bool>(syncType),
+      'imageSource': serializer.toJson<String>(imageSource),
     };
   }
 
@@ -414,6 +647,13 @@ class MangaTableData extends DataClass implements Insertable<MangaTableData> {
     double? note,
     double? chapitres,
     Value<String?> liens = const Value.absent(),
+    Value<int?> anilistId = const Value.absent(),
+    Value<DateTime?> lastSyncedAt = const Value.absent(),
+    bool? syncImage,
+    bool? syncDescription,
+    bool? syncGenres,
+    bool? syncType,
+    String? imageSource,
   }) => MangaTableData(
     id: id ?? this.id,
     titre: titre ?? this.titre,
@@ -426,6 +666,13 @@ class MangaTableData extends DataClass implements Insertable<MangaTableData> {
     note: note ?? this.note,
     chapitres: chapitres ?? this.chapitres,
     liens: liens.present ? liens.value : this.liens,
+    anilistId: anilistId.present ? anilistId.value : this.anilistId,
+    lastSyncedAt: lastSyncedAt.present ? lastSyncedAt.value : this.lastSyncedAt,
+    syncImage: syncImage ?? this.syncImage,
+    syncDescription: syncDescription ?? this.syncDescription,
+    syncGenres: syncGenres ?? this.syncGenres,
+    syncType: syncType ?? this.syncType,
+    imageSource: imageSource ?? this.imageSource,
   );
   MangaTableData copyWithCompanion(MangaTableCompanion data) {
     return MangaTableData(
@@ -442,6 +689,21 @@ class MangaTableData extends DataClass implements Insertable<MangaTableData> {
       note: data.note.present ? data.note.value : this.note,
       chapitres: data.chapitres.present ? data.chapitres.value : this.chapitres,
       liens: data.liens.present ? data.liens.value : this.liens,
+      anilistId: data.anilistId.present ? data.anilistId.value : this.anilistId,
+      lastSyncedAt: data.lastSyncedAt.present
+          ? data.lastSyncedAt.value
+          : this.lastSyncedAt,
+      syncImage: data.syncImage.present ? data.syncImage.value : this.syncImage,
+      syncDescription: data.syncDescription.present
+          ? data.syncDescription.value
+          : this.syncDescription,
+      syncGenres: data.syncGenres.present
+          ? data.syncGenres.value
+          : this.syncGenres,
+      syncType: data.syncType.present ? data.syncType.value : this.syncType,
+      imageSource: data.imageSource.present
+          ? data.imageSource.value
+          : this.imageSource,
     );
   }
 
@@ -458,7 +720,14 @@ class MangaTableData extends DataClass implements Insertable<MangaTableData> {
           ..write('estFavori: $estFavori, ')
           ..write('note: $note, ')
           ..write('chapitres: $chapitres, ')
-          ..write('liens: $liens')
+          ..write('liens: $liens, ')
+          ..write('anilistId: $anilistId, ')
+          ..write('lastSyncedAt: $lastSyncedAt, ')
+          ..write('syncImage: $syncImage, ')
+          ..write('syncDescription: $syncDescription, ')
+          ..write('syncGenres: $syncGenres, ')
+          ..write('syncType: $syncType, ')
+          ..write('imageSource: $imageSource')
           ..write(')'))
         .toString();
   }
@@ -476,6 +745,13 @@ class MangaTableData extends DataClass implements Insertable<MangaTableData> {
     note,
     chapitres,
     liens,
+    anilistId,
+    lastSyncedAt,
+    syncImage,
+    syncDescription,
+    syncGenres,
+    syncType,
+    imageSource,
   );
   @override
   bool operator ==(Object other) =>
@@ -491,7 +767,14 @@ class MangaTableData extends DataClass implements Insertable<MangaTableData> {
           other.estFavori == this.estFavori &&
           other.note == this.note &&
           other.chapitres == this.chapitres &&
-          other.liens == this.liens);
+          other.liens == this.liens &&
+          other.anilistId == this.anilistId &&
+          other.lastSyncedAt == this.lastSyncedAt &&
+          other.syncImage == this.syncImage &&
+          other.syncDescription == this.syncDescription &&
+          other.syncGenres == this.syncGenres &&
+          other.syncType == this.syncType &&
+          other.imageSource == this.imageSource);
 }
 
 class MangaTableCompanion extends UpdateCompanion<MangaTableData> {
@@ -506,6 +789,13 @@ class MangaTableCompanion extends UpdateCompanion<MangaTableData> {
   final Value<double> note;
   final Value<double> chapitres;
   final Value<String?> liens;
+  final Value<int?> anilistId;
+  final Value<DateTime?> lastSyncedAt;
+  final Value<bool> syncImage;
+  final Value<bool> syncDescription;
+  final Value<bool> syncGenres;
+  final Value<bool> syncType;
+  final Value<String> imageSource;
   const MangaTableCompanion({
     this.id = const Value.absent(),
     this.titre = const Value.absent(),
@@ -518,6 +808,13 @@ class MangaTableCompanion extends UpdateCompanion<MangaTableData> {
     this.note = const Value.absent(),
     this.chapitres = const Value.absent(),
     this.liens = const Value.absent(),
+    this.anilistId = const Value.absent(),
+    this.lastSyncedAt = const Value.absent(),
+    this.syncImage = const Value.absent(),
+    this.syncDescription = const Value.absent(),
+    this.syncGenres = const Value.absent(),
+    this.syncType = const Value.absent(),
+    this.imageSource = const Value.absent(),
   });
   MangaTableCompanion.insert({
     this.id = const Value.absent(),
@@ -531,6 +828,13 @@ class MangaTableCompanion extends UpdateCompanion<MangaTableData> {
     required double note,
     required double chapitres,
     this.liens = const Value.absent(),
+    this.anilistId = const Value.absent(),
+    this.lastSyncedAt = const Value.absent(),
+    this.syncImage = const Value.absent(),
+    this.syncDescription = const Value.absent(),
+    this.syncGenres = const Value.absent(),
+    this.syncType = const Value.absent(),
+    this.imageSource = const Value.absent(),
   }) : titre = Value(titre),
        status = Value(status),
        typeManga = Value(typeManga),
@@ -549,6 +853,13 @@ class MangaTableCompanion extends UpdateCompanion<MangaTableData> {
     Expression<double>? note,
     Expression<double>? chapitres,
     Expression<String>? liens,
+    Expression<int>? anilistId,
+    Expression<DateTime>? lastSyncedAt,
+    Expression<bool>? syncImage,
+    Expression<bool>? syncDescription,
+    Expression<bool>? syncGenres,
+    Expression<bool>? syncType,
+    Expression<String>? imageSource,
   }) {
     return RawValuesInsertable({
       if (id != null) 'id': id,
@@ -562,6 +873,13 @@ class MangaTableCompanion extends UpdateCompanion<MangaTableData> {
       if (note != null) 'note': note,
       if (chapitres != null) 'chapitres': chapitres,
       if (liens != null) 'liens': liens,
+      if (anilistId != null) 'anilist_id': anilistId,
+      if (lastSyncedAt != null) 'last_synced_at': lastSyncedAt,
+      if (syncImage != null) 'sync_image': syncImage,
+      if (syncDescription != null) 'sync_description': syncDescription,
+      if (syncGenres != null) 'sync_genres': syncGenres,
+      if (syncType != null) 'sync_type': syncType,
+      if (imageSource != null) 'image_source': imageSource,
     });
   }
 
@@ -577,6 +895,13 @@ class MangaTableCompanion extends UpdateCompanion<MangaTableData> {
     Value<double>? note,
     Value<double>? chapitres,
     Value<String?>? liens,
+    Value<int?>? anilistId,
+    Value<DateTime?>? lastSyncedAt,
+    Value<bool>? syncImage,
+    Value<bool>? syncDescription,
+    Value<bool>? syncGenres,
+    Value<bool>? syncType,
+    Value<String>? imageSource,
   }) {
     return MangaTableCompanion(
       id: id ?? this.id,
@@ -590,6 +915,13 @@ class MangaTableCompanion extends UpdateCompanion<MangaTableData> {
       note: note ?? this.note,
       chapitres: chapitres ?? this.chapitres,
       liens: liens ?? this.liens,
+      anilistId: anilistId ?? this.anilistId,
+      lastSyncedAt: lastSyncedAt ?? this.lastSyncedAt,
+      syncImage: syncImage ?? this.syncImage,
+      syncDescription: syncDescription ?? this.syncDescription,
+      syncGenres: syncGenres ?? this.syncGenres,
+      syncType: syncType ?? this.syncType,
+      imageSource: imageSource ?? this.imageSource,
     );
   }
 
@@ -629,6 +961,27 @@ class MangaTableCompanion extends UpdateCompanion<MangaTableData> {
     if (liens.present) {
       map['liens'] = Variable<String>(liens.value);
     }
+    if (anilistId.present) {
+      map['anilist_id'] = Variable<int>(anilistId.value);
+    }
+    if (lastSyncedAt.present) {
+      map['last_synced_at'] = Variable<DateTime>(lastSyncedAt.value);
+    }
+    if (syncImage.present) {
+      map['sync_image'] = Variable<bool>(syncImage.value);
+    }
+    if (syncDescription.present) {
+      map['sync_description'] = Variable<bool>(syncDescription.value);
+    }
+    if (syncGenres.present) {
+      map['sync_genres'] = Variable<bool>(syncGenres.value);
+    }
+    if (syncType.present) {
+      map['sync_type'] = Variable<bool>(syncType.value);
+    }
+    if (imageSource.present) {
+      map['image_source'] = Variable<String>(imageSource.value);
+    }
     return map;
   }
 
@@ -645,7 +998,14 @@ class MangaTableCompanion extends UpdateCompanion<MangaTableData> {
           ..write('estFavori: $estFavori, ')
           ..write('note: $note, ')
           ..write('chapitres: $chapitres, ')
-          ..write('liens: $liens')
+          ..write('liens: $liens, ')
+          ..write('anilistId: $anilistId, ')
+          ..write('lastSyncedAt: $lastSyncedAt, ')
+          ..write('syncImage: $syncImage, ')
+          ..write('syncDescription: $syncDescription, ')
+          ..write('syncGenres: $syncGenres, ')
+          ..write('syncType: $syncType, ')
+          ..write('imageSource: $imageSource')
           ..write(')'))
         .toString();
   }
@@ -676,6 +1036,13 @@ typedef $$MangaTableTableCreateCompanionBuilder =
       required double note,
       required double chapitres,
       Value<String?> liens,
+      Value<int?> anilistId,
+      Value<DateTime?> lastSyncedAt,
+      Value<bool> syncImage,
+      Value<bool> syncDescription,
+      Value<bool> syncGenres,
+      Value<bool> syncType,
+      Value<String> imageSource,
     });
 typedef $$MangaTableTableUpdateCompanionBuilder =
     MangaTableCompanion Function({
@@ -690,6 +1057,13 @@ typedef $$MangaTableTableUpdateCompanionBuilder =
       Value<double> note,
       Value<double> chapitres,
       Value<String?> liens,
+      Value<int?> anilistId,
+      Value<DateTime?> lastSyncedAt,
+      Value<bool> syncImage,
+      Value<bool> syncDescription,
+      Value<bool> syncGenres,
+      Value<bool> syncType,
+      Value<String> imageSource,
     });
 
 class $$MangaTableTableFilterComposer
@@ -753,6 +1127,41 @@ class $$MangaTableTableFilterComposer
 
   ColumnFilters<String> get liens => $composableBuilder(
     column: $table.liens,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<int> get anilistId => $composableBuilder(
+    column: $table.anilistId,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<DateTime> get lastSyncedAt => $composableBuilder(
+    column: $table.lastSyncedAt,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<bool> get syncImage => $composableBuilder(
+    column: $table.syncImage,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<bool> get syncDescription => $composableBuilder(
+    column: $table.syncDescription,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<bool> get syncGenres => $composableBuilder(
+    column: $table.syncGenres,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<bool> get syncType => $composableBuilder(
+    column: $table.syncType,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get imageSource => $composableBuilder(
+    column: $table.imageSource,
     builder: (column) => ColumnFilters(column),
   );
 }
@@ -820,6 +1229,41 @@ class $$MangaTableTableOrderingComposer
     column: $table.liens,
     builder: (column) => ColumnOrderings(column),
   );
+
+  ColumnOrderings<int> get anilistId => $composableBuilder(
+    column: $table.anilistId,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<DateTime> get lastSyncedAt => $composableBuilder(
+    column: $table.lastSyncedAt,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<bool> get syncImage => $composableBuilder(
+    column: $table.syncImage,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<bool> get syncDescription => $composableBuilder(
+    column: $table.syncDescription,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<bool> get syncGenres => $composableBuilder(
+    column: $table.syncGenres,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<bool> get syncType => $composableBuilder(
+    column: $table.syncType,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get imageSource => $composableBuilder(
+    column: $table.imageSource,
+    builder: (column) => ColumnOrderings(column),
+  );
 }
 
 class $$MangaTableTableAnnotationComposer
@@ -865,6 +1309,35 @@ class $$MangaTableTableAnnotationComposer
 
   GeneratedColumn<String> get liens =>
       $composableBuilder(column: $table.liens, builder: (column) => column);
+
+  GeneratedColumn<int> get anilistId =>
+      $composableBuilder(column: $table.anilistId, builder: (column) => column);
+
+  GeneratedColumn<DateTime> get lastSyncedAt => $composableBuilder(
+    column: $table.lastSyncedAt,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<bool> get syncImage =>
+      $composableBuilder(column: $table.syncImage, builder: (column) => column);
+
+  GeneratedColumn<bool> get syncDescription => $composableBuilder(
+    column: $table.syncDescription,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<bool> get syncGenres => $composableBuilder(
+    column: $table.syncGenres,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<bool> get syncType =>
+      $composableBuilder(column: $table.syncType, builder: (column) => column);
+
+  GeneratedColumn<String> get imageSource => $composableBuilder(
+    column: $table.imageSource,
+    builder: (column) => column,
+  );
 }
 
 class $$MangaTableTableTableManager
@@ -909,6 +1382,13 @@ class $$MangaTableTableTableManager
                 Value<double> note = const Value.absent(),
                 Value<double> chapitres = const Value.absent(),
                 Value<String?> liens = const Value.absent(),
+                Value<int?> anilistId = const Value.absent(),
+                Value<DateTime?> lastSyncedAt = const Value.absent(),
+                Value<bool> syncImage = const Value.absent(),
+                Value<bool> syncDescription = const Value.absent(),
+                Value<bool> syncGenres = const Value.absent(),
+                Value<bool> syncType = const Value.absent(),
+                Value<String> imageSource = const Value.absent(),
               }) => MangaTableCompanion(
                 id: id,
                 titre: titre,
@@ -921,6 +1401,13 @@ class $$MangaTableTableTableManager
                 note: note,
                 chapitres: chapitres,
                 liens: liens,
+                anilistId: anilistId,
+                lastSyncedAt: lastSyncedAt,
+                syncImage: syncImage,
+                syncDescription: syncDescription,
+                syncGenres: syncGenres,
+                syncType: syncType,
+                imageSource: imageSource,
               ),
           createCompanionCallback:
               ({
@@ -935,6 +1422,13 @@ class $$MangaTableTableTableManager
                 required double note,
                 required double chapitres,
                 Value<String?> liens = const Value.absent(),
+                Value<int?> anilistId = const Value.absent(),
+                Value<DateTime?> lastSyncedAt = const Value.absent(),
+                Value<bool> syncImage = const Value.absent(),
+                Value<bool> syncDescription = const Value.absent(),
+                Value<bool> syncGenres = const Value.absent(),
+                Value<bool> syncType = const Value.absent(),
+                Value<String> imageSource = const Value.absent(),
               }) => MangaTableCompanion.insert(
                 id: id,
                 titre: titre,
@@ -947,6 +1441,13 @@ class $$MangaTableTableTableManager
                 note: note,
                 chapitres: chapitres,
                 liens: liens,
+                anilistId: anilistId,
+                lastSyncedAt: lastSyncedAt,
+                syncImage: syncImage,
+                syncDescription: syncDescription,
+                syncGenres: syncGenres,
+                syncType: syncType,
+                imageSource: imageSource,
               ),
           withReferenceMapper: (p0) => p0
               .map((e) => (e.readTable(table), BaseReferences(db, table, e)))

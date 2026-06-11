@@ -13,7 +13,7 @@ class AppDatabase extends _$AppDatabase {
   MangaDao get mangaDao => MangaDao(this);
 
   @override
-  int get schemaVersion => 3;
+  int get schemaVersion => 4;
 
   @override
   MigrationStrategy get migration => MigrationStrategy(
@@ -23,6 +23,21 @@ class AppDatabase extends _$AppDatabase {
       }
       if (from < 3) {
         await m.addColumn(mangaTable, mangaTable.liens);
+      }
+      if (from < 4) {
+        await m.addColumn(mangaTable, mangaTable.anilistId);
+        await m.addColumn(mangaTable, mangaTable.lastSyncedAt);
+        await m.addColumn(mangaTable, mangaTable.syncImage);
+        await m.addColumn(mangaTable, mangaTable.syncDescription);
+        await m.addColumn(mangaTable, mangaTable.syncGenres);
+        await m.addColumn(mangaTable, mangaTable.syncType);
+        await m.addColumn(mangaTable, mangaTable.imageSource);
+        // AniList n'a jamais écrit avant la v4 : une image déjà présente
+        // vient forcément de l'utilisateur, on la protège.
+        await customStatement(
+          "UPDATE manga_table SET image_source = 'utilisateur' "
+          'WHERE image_path IS NOT NULL',
+        );
       }
     },
   );
