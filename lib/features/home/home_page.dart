@@ -4,6 +4,7 @@ import 'package:folio/app/providers.dart';
 import 'package:folio/features/library/library_page.dart';
 import 'package:folio/features/settings/settings_page.dart';
 import 'package:folio/features/statistics/statistics_page.dart';
+import 'package:folio/services/anilist/sync_engine.dart';
 import 'package:folio/services/update_service.dart';
 
 class HomePage extends ConsumerStatefulWidget {
@@ -23,6 +24,9 @@ class _HomePage extends ConsumerState<HomePage> {
     _indexActif = ref.read(startTabProvider);
     UpdateService.checkForUpdate().then((info) {
       if (info != null && mounted) _showUpdateDialog(info);
+    });
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) ref.read(syncEngineProvider).demarrer();
     });
   }
 

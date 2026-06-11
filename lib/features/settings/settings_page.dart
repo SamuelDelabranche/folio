@@ -10,6 +10,7 @@ import 'package:folio/data/database/app_database.dart';
 import 'package:folio/data/database/daos/manga_dao.dart';
 import 'package:folio/data/models/lien.dart';
 import 'package:folio/features/onboarding/onboarding_page.dart';
+import 'package:folio/services/anilist/sync_engine.dart';
 import 'package:folio/services/cover_service.dart';
 import 'package:folio/services/update_service.dart';
 import 'package:url_launcher/url_launcher.dart';
@@ -252,6 +253,46 @@ class _SettingsPage extends ConsumerState<SettingsPage> {
     );
   }
 
+  Future<void> _toutResynchroniser() async {
+    final messenger = ScaffoldMessenger.of(context);
+    final mangas = await _dao.getAllMangas();
+    final lies = mangas.where((m) => m.anilistId != null).length;
+    if (!mounted) return;
+    if (lies == 0) {
+      messenger.showSnackBar(SnackBar(
+        backgroundColor: AppColors.info,
+        content: const Text('Aucun manga lié à AniList', textAlign: TextAlign.center, style: TextStyle(color: Colors.black87)),
+      ));
+      return;
+    }
+    final secondes = (lies * 2.5).ceil();
+    final estimation = secondes < 60 ? '$secondes s' : '${(secondes / 60).ceil()} min';
+    showDialog(
+      context: context,
+      builder: (dialogContext) => AlertDialog(
+        icon: const Icon(Icons.sync, size: 44),
+        title: const Text('Tout resynchroniser ?'),
+        content: Text(
+          '$lies manga(s) lié(s) — environ $estimation.\n\nLa synchronisation tournera en arrière-plan, tu peux continuer à utiliser l\'application.',
+          textAlign: TextAlign.center,
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(dialogContext),
+            child: const Text('Annuler'),
+          ),
+          FilledButton(
+            onPressed: () {
+              Navigator.pop(dialogContext);
+              ref.read(syncEngineProvider).runAll(force: true);
+            },
+            child: const Text('Lancer'),
+          ),
+        ],
+      ),
+    );
+  }
+
   MangaTableCompanion _companionDepuisJson(dynamic item) {
     if (item is! Map<String, dynamic>) {
       throw const FormatException('Item invalide');
@@ -483,6 +524,23 @@ class _SettingsPage extends ConsumerState<SettingsPage> {
                         value: sync.type,
                         enabled: sync.maitre,
                         onChanged: notifier.setType,
+                      ),
+                      const Divider(height: 1, indent: 68),
+                      Consumer(
+                        builder: (context, ref, _) {
+                          final enCours = ref.watch(syncEnCoursProvider);
+                          return _SettingsTile(
+                            icon: enCours ? Icons.hourglass_top : Icons.sync,
+                            iconColor: AppColors.primary,
+                            title: 'Tout resynchroniser',
+                            subtitle: enCours
+                                ? 'Synchronisation en cours…'
+                                : 'Met à jour tous les mangas liés maintenant',
+                            onTap: enCours || !sync.maitre
+                                ? null
+                                : _toutResynchroniser,
+                          );
+                        },
                       ),
                       const Padding(
                         padding: EdgeInsets.fromLTRB(16, 4, 16, 12),

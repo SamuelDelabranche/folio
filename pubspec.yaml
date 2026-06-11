@@ -42,6 +42,7 @@ dependencies:
   url_launcher: ^6.3.0
   image_picker: ^1.1.2
   image: ^4.3.0
+  connectivity_plus: ^6.1.0
 
 
   flutter:
