@@ -455,6 +455,66 @@ class _SettingsPage extends ConsumerState<SettingsPage> {
             ),
             const SizedBox(height: 24),
 
+            // ── Synchronisation AniList ──
+            _SectionLabel('Synchronisation'),
+            Card(
+              margin: EdgeInsets.zero,
+              child: Consumer(
+                builder: (context, ref, _) {
+                  final sync = ref.watch(syncPrefsProvider);
+                  final notifier = ref.read(syncPrefsProvider.notifier);
+                  return Column(
+                    children: [
+                      SwitchListTile(
+                        secondary: const Icon(Icons.sync_outlined),
+                        title: const Text('Synchronisation AniList'),
+                        subtitle: const Text('Enrichit les fiches liées en arrière-plan'),
+                        value: sync.maitre,
+                        onChanged: notifier.setMaitre,
+                      ),
+                      const Divider(height: 1, indent: 68),
+                      _SyncFieldSwitch(
+                        label: 'Images de couverture',
+                        value: sync.image,
+                        enabled: sync.maitre,
+                        onChanged: notifier.setImage,
+                      ),
+                      _SyncFieldSwitch(
+                        label: 'Descriptions',
+                        value: sync.description,
+                        enabled: sync.maitre,
+                        onChanged: notifier.setDescription,
+                      ),
+                      _SyncFieldSwitch(
+                        label: 'Genres',
+                        value: sync.genres,
+                        enabled: sync.maitre,
+                        onChanged: notifier.setGenres,
+                      ),
+                      _SyncFieldSwitch(
+                        label: 'Types (Manga, Manhwa…)',
+                        value: sync.type,
+                        enabled: sync.maitre,
+                        onChanged: notifier.setType,
+                      ),
+                      const Padding(
+                        padding: EdgeInsets.fromLTRB(16, 4, 16, 12),
+                        child: Align(
+                          alignment: Alignment.centerLeft,
+                          child: Text(
+                            'Chaque manga peut aussi désactiver ces champs '
+                            'individuellement dans sa fiche. Données fournies par AniList.',
+                            style: TextStyle(fontSize: 12, color: Colors.grey),
+                          ),
+                        ),
+                      ),
+                    ],
+                  );
+                },
+              ),
+            ),
+            const SizedBox(height: 24),
+
             _SectionLabel('Apparence'),
             Card(
               margin: EdgeInsets.zero,
@@ -518,6 +578,32 @@ class _SettingsPage extends ConsumerState<SettingsPage> {
           ],
         ),
       ),
+    );
+  }
+}
+
+/// Interrupteur global d'un champ de synchro, grisé quand le maître est coupé.
+class _SyncFieldSwitch extends StatelessWidget {
+  final String label;
+  final bool value;
+  final bool enabled;
+  final ValueChanged<bool> onChanged;
+
+  const _SyncFieldSwitch({
+    required this.label,
+    required this.value,
+    required this.enabled,
+    required this.onChanged,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return SwitchListTile(
+      dense: true,
+      contentPadding: const EdgeInsets.only(left: 68, right: 16),
+      title: Text(label, style: const TextStyle(fontSize: 14)),
+      value: value,
+      onChanged: enabled ? onChanged : null,
     );
   }
 }

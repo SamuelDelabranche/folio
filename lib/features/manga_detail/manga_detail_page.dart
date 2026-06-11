@@ -37,11 +37,22 @@ class _MangaDetailPage extends ConsumerState<MangaDetailPage> {
   late String _statutController;
   late String _typeController;
 
+  // Toggles de synchro de la fiche (combinés en « filtre ET » avec les
+  // réglages globaux des Paramètres).
+  late bool _syncImage;
+  late bool _syncDescription;
+  late bool _syncGenres;
+  late bool _syncType;
+
   @override
   void initState() {
     super.initState();
     _dao = ref.read(mangaDaoProvider);
     _estFavori = widget.mangaData.estFavori;
+    _syncImage = widget.mangaData.syncImage;
+    _syncDescription = widget.mangaData.syncDescription;
+    _syncGenres = widget.mangaData.syncGenres;
+    _syncType = widget.mangaData.syncType;
     _titre = widget.mangaData.titre;
     _noteEdition = widget.mangaData.note;
     _titreController = TextEditingController(text: widget.mangaData.titre);
@@ -108,6 +119,14 @@ class _MangaDetailPage extends ConsumerState<MangaDetailPage> {
       _chapitresController.text =
           nouveau % 1 == 0 ? nouveau.toInt().toString() : nouveau.toString();
     });
+  }
+
+  Future<void> _setToggleSync(MangaTableCompanion companion) =>
+      _dao.updateMangaByElement(widget.mangaData.id, companion);
+
+  String _formatDate(DateTime d) {
+    String deux(int n) => n.toString().padLeft(2, '0');
+    return '${deux(d.day)}/${deux(d.month)}/${d.year} à ${deux(d.hour)}h${deux(d.minute)}';
   }
 
   @override
@@ -561,6 +580,76 @@ class _MangaDetailPage extends ConsumerState<MangaDetailPage> {
                                     ),
                                 ],
                               ),
+                    const SizedBox(height: 20),
+
+                    // ── Synchronisation AniList ──
+                    _SectionLabel('Synchronisation AniList'),
+                    Card(
+                      margin: EdgeInsets.zero,
+                      child: Consumer(
+                        builder: (context, ref, _) {
+                          final prefs = ref.watch(syncPrefsProvider);
+                          return Column(
+                            children: [
+                              ListTile(
+                                leading: Icon(
+                                  widget.mangaData.anilistId != null
+                                      ? Icons.cloud_done_outlined
+                                      : Icons.cloud_off_outlined,
+                                  color: widget.mangaData.anilistId != null
+                                      ? AppColors.success
+                                      : Colors.grey,
+                                ),
+                                title: Text(widget.mangaData.anilistId != null
+                                    ? 'Lié à AniList (#${widget.mangaData.anilistId})'
+                                    : 'Non lié à AniList'),
+                                subtitle: Text(widget.mangaData.lastSyncedAt != null
+                                    ? 'Dernière synchro : ${_formatDate(widget.mangaData.lastSyncedAt!)}'
+                                    : 'Jamais synchronisé'),
+                              ),
+                              const Divider(height: 1, indent: 56),
+                              _SyncToggleFiche(
+                                label: 'Image de couverture',
+                                value: _syncImage,
+                                globalActif: prefs.maitre && prefs.image,
+                                onChanged: (v) {
+                                  setState(() => _syncImage = v);
+                                  _setToggleSync(MangaTableCompanion(syncImage: Value(v)));
+                                },
+                              ),
+                              _SyncToggleFiche(
+                                label: 'Description',
+                                value: _syncDescription,
+                                globalActif: prefs.maitre && prefs.description,
+                                onChanged: (v) {
+                                  setState(() => _syncDescription = v);
+                                  _setToggleSync(MangaTableCompanion(syncDescription: Value(v)));
+                                },
+                              ),
+                              _SyncToggleFiche(
+                                label: 'Genres',
+                                value: _syncGenres,
+                                globalActif: prefs.maitre && prefs.genres,
+                                onChanged: (v) {
+                                  setState(() => _syncGenres = v);
+                                  _setToggleSync(MangaTableCompanion(syncGenres: Value(v)));
+                                },
+                              ),
+                              _SyncToggleFiche(
+                                label: 'Type',
+                                value: _syncType,
+                                globalActif: prefs.maitre && prefs.type,
+                                onChanged: (v) {
+                                  setState(() => _syncType = v);
+                                  _setToggleSync(MangaTableCompanion(syncType: Value(v)));
+                                },
+                              ),
+                              const SizedBox(height: 4),
+                            ],
+                          );
+                        },
+                      ),
+                    ),
                     const SizedBox(height: 24),
                   ],
                 ),
@@ -569,6 +658,36 @@ class _MangaDetailPage extends ConsumerState<MangaDetailPage> {
           ),
         ),
       ),
+    );
+  }
+}
+
+/// Toggle de synchro d'un champ pour cette fiche. Grisé avec explication
+/// quand le réglage global correspondant (ou le maître) est coupé.
+class _SyncToggleFiche extends StatelessWidget {
+  final String label;
+  final bool value;
+  final bool globalActif;
+  final ValueChanged<bool> onChanged;
+
+  const _SyncToggleFiche({
+    required this.label,
+    required this.value,
+    required this.globalActif,
+    required this.onChanged,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return SwitchListTile(
+      dense: true,
+      contentPadding: const EdgeInsets.only(left: 56, right: 16),
+      title: Text(label, style: const TextStyle(fontSize: 14)),
+      subtitle: globalActif
+          ? null
+          : const Text('Désactivé globalement (Paramètres)', style: TextStyle(fontSize: 11)),
+      value: value,
+      onChanged: globalActif ? onChanged : null,
     );
   }
 }

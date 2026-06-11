@@ -10,6 +10,7 @@ void main() async {
   await container.read(themeModeProvider.notifier).load();
   await container.read(viewModeProvider.notifier).load();
   await container.read(startTabProvider.notifier).load();
+  await container.read(syncPrefsProvider.notifier).load();
   runApp(UncontrolledProviderScope(container: container, child: const MyApp()));
 }
 
