@@ -3,6 +3,7 @@ library;
 class AnilistSearchResult {
   final int id;
   final String titre;
+  final String? titreAnglais;
   final String? vignetteUrl;
   final String? format;
   final String? pays;
@@ -11,6 +12,7 @@ class AnilistSearchResult {
   const AnilistSearchResult({
     required this.id,
     required this.titre,
+    this.titreAnglais,
     this.vignetteUrl,
     this.format,
     this.pays,
@@ -23,11 +25,13 @@ class AnilistSearchResult {
     final titre = _titreDepuisJson(json['title']);
     if (id == null || titre == null) return null;
 
+    final title = json['title'];
     final cover = json['coverImage'];
     final startDate = json['startDate'];
     return AnilistSearchResult(
       id: id,
       titre: titre,
+      titreAnglais: title is Map<String, dynamic> ? title['english'] as String? : null,
       vignetteUrl: cover is Map<String, dynamic> ? cover['medium'] as String? : null,
       format: json['format'] as String?,
       pays: json['countryOfOrigin'] as String?,
@@ -99,6 +103,25 @@ String? _titreDepuisJson(dynamic title) {
   if (english is String && english.isNotEmpty) return english;
   if (native is String && native.isNotEmpty) return native;
   return null;
+}
+
+String normaliserTitre(String s) =>
+    s.toLowerCase().replaceAll(RegExp(r'[^a-z0-9à-ÿ]+'), ' ').trim();
+
+AnilistSearchResult? meilleurResultat(
+  String titre,
+  List<AnilistSearchResult> resultats,
+) {
+  if (resultats.isEmpty) return null;
+  final cible = normaliserTitre(titre);
+  if (cible.isEmpty) return resultats.first;
+  for (final r in resultats) {
+    if (normaliserTitre(r.titre) == cible) return r;
+    if (r.titreAnglais != null && normaliserTitre(r.titreAnglais!) == cible) {
+      return r;
+    }
+  }
+  return resultats.first;
 }
 
 String typeDepuisAnilist(String? format, String? pays) {

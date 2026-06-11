@@ -69,6 +69,33 @@ void main() {
     });
   });
 
+  group('meilleurResultat', () {
+    const a = AnilistSearchResult(id: 1, titre: 'Berserk: Edition Deluxe');
+    const b = AnilistSearchResult(id: 2, titre: 'Berserk');
+    const c = AnilistSearchResult(
+      id: 3,
+      titre: 'Na Honjaman Lebel-eob',
+      titreAnglais: 'Solo Leveling',
+    );
+
+    test('préfère la correspondance exacte au premier résultat', () {
+      expect(meilleurResultat('Berserk', [a, b, c])?.id, 2);
+      expect(meilleurResultat('berserk !', [a, b, c])?.id, 2);
+    });
+
+    test('matche aussi le titre anglais', () {
+      expect(meilleurResultat('Solo Leveling', [a, b, c])?.id, 3);
+    });
+
+    test('retombe sur le premier résultat sans correspondance exacte', () {
+      expect(meilleurResultat('Titre inconnu', [a, b, c])?.id, 1);
+    });
+
+    test('liste vide donne null', () {
+      expect(meilleurResultat('Berserk', []), isNull);
+    });
+  });
+
   group('AnilistSearchResult.depuisJson', () {
     test('exige id et titre', () {
       expect(AnilistSearchResult.depuisJson({'id': 1}), isNull);

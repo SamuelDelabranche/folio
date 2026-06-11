@@ -9,6 +9,7 @@ import 'package:folio/app/providers.dart';
 import 'package:folio/data/database/app_database.dart';
 import 'package:folio/services/cover_service.dart';
 import 'package:folio/services/anilist/anilist_client.dart';
+import 'package:folio/services/anilist/anilist_models.dart';
 
 bool urlCoverAutorisee(String url) {
   final uri = Uri.tryParse(url);
@@ -29,10 +30,11 @@ class SyncService {
     if (manga.anilistId != null) return true;
     if (manga.titre.trim().isEmpty) return false;
     final resultats = await client.search(manga.titre);
-    if (resultats.isEmpty) return false;
+    final choix = meilleurResultat(manga.titre, resultats);
+    if (choix == null) return false;
     await _ref.read(mangaDaoProvider).updateMangaByElement(
           manga.id,
-          MangaTableCompanion(anilistId: Value(resultats.first.id)),
+          MangaTableCompanion(anilistId: Value(choix.id)),
         );
     return true;
   }
