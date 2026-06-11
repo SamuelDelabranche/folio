@@ -78,18 +78,24 @@ class SyncService {
   }
 
   Future<String?> _telechargerCover(String url, int anilistId) async {
+    http.Client? clientHttp;
     try {
-      final reponse = await http
-          .get(Uri.parse(url))
+      final requete = http.Request('GET', Uri.parse(url))
+        ..followRedirects = false;
+      clientHttp = http.Client();
+      final flux = await clientHttp
+          .send(requete)
           .timeout(const Duration(seconds: 10));
-      if (reponse.statusCode != 200) return null;
-      if (reponse.bodyBytes.length > CoverService.tailleMaxOctets) return null;
-      return await CoverService.installerCover(
-        reponse.bodyBytes,
-        'anilist_$anilistId.jpg',
-      );
+      if (flux.statusCode != 200) return null;
+      if ((flux.contentLength ?? 0) > CoverService.tailleMaxOctets) return null;
+      final octets =
+          await flux.stream.toBytes().timeout(const Duration(seconds: 20));
+      if (octets.length > CoverService.tailleMaxOctets) return null;
+      return await CoverService.installerCover(octets, 'anilist_$anilistId.jpg');
     } catch (_) {
       return null;
+    } finally {
+      clientHttp?.close();
     }
   }
 }

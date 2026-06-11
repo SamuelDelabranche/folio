@@ -498,7 +498,10 @@ class _SettingsPage extends ConsumerState<SettingsPage> {
                         title: const Text('Synchronisation AniList'),
                         subtitle: const Text('Enrichit les fiches liées en arrière-plan'),
                         value: sync.maitre,
-                        onChanged: notifier.setMaitre,
+                        onChanged: (v) {
+                          notifier.setMaitre(v);
+                          if (!v) ref.read(syncEngineProvider).annuler();
+                        },
                       ),
                       const Divider(height: 1, indent: 68),
                       _SyncFieldSwitch(
@@ -529,16 +532,21 @@ class _SettingsPage extends ConsumerState<SettingsPage> {
                       Consumer(
                         builder: (context, ref, _) {
                           final enCours = ref.watch(syncEnCoursProvider);
+                          if (enCours) {
+                            return _SettingsTile(
+                              icon: Icons.stop_circle_outlined,
+                              iconColor: AppColors.danger,
+                              title: 'Arrêter la synchronisation',
+                              subtitle: 'Une synchronisation est en cours',
+                              onTap: () => ref.read(syncEngineProvider).annuler(),
+                            );
+                          }
                           return _SettingsTile(
-                            icon: enCours ? Icons.hourglass_top : Icons.sync,
+                            icon: Icons.sync,
                             iconColor: AppColors.primary,
                             title: 'Tout resynchroniser',
-                            subtitle: enCours
-                                ? 'Synchronisation en cours…'
-                                : 'Met à jour tous les mangas liés maintenant',
-                            onTap: enCours || !sync.maitre
-                                ? null
-                                : _toutResynchroniser,
+                            subtitle: 'Met à jour tous les mangas liés maintenant',
+                            onTap: sync.maitre ? _toutResynchroniser : null,
                           );
                         },
                       ),

@@ -101,7 +101,8 @@ query ($id: Int) {
 
     if (reponse.statusCode == 429) {
       final retryAfter =
-          int.tryParse(reponse.headers['retry-after'] ?? '') ?? 60;
+          (int.tryParse(reponse.headers['retry-after'] ?? '') ?? 60)
+              .clamp(5, 300);
       throw AnilistRateLimitException(Duration(seconds: retryAfter));
     }
     if (reponse.statusCode != 200) {

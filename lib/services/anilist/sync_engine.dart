@@ -32,9 +32,23 @@ class SyncEngine {
   StreamSubscription<List<ConnectivityResult>>? _aboConnectivite;
   bool _etaitHorsLigne = false;
   bool _enCours = false;
+  bool _arretDemande = false;
   DateTime? _dernierePasse;
 
   SyncEngine(this._ref);
+
+  void annuler() => _arretDemande = true;
+
+  bool get _doitContinuer =>
+      !_arretDemande && _ref.read(syncPrefsProvider).maitre;
+
+  Future<void> _attendre(Duration duree) async {
+    final fin = DateTime.now().add(duree);
+    while (DateTime.now().isBefore(fin)) {
+      if (!_doitContinuer) return;
+      await Future.delayed(const Duration(milliseconds: 250));
+    }
+  }
 
   void demarrer() {
     _aboConnectivite ??= Connectivity().onConnectivityChanged.listen((etats) {
@@ -57,6 +71,7 @@ class SyncEngine {
     }
 
     _enCours = true;
+    _arretDemande = false;
     _dernierePasse = maintenant;
     _ref.read(syncEnCoursProvider.notifier).set(true);
     try {
@@ -77,25 +92,26 @@ class SyncEngine {
         });
 
       for (final manga in candidats) {
-        if (!_ref.read(syncPrefsProvider).maitre) break;
+        if (!_doitContinuer) break;
         try {
           var courant = manga;
           if (courant.anilistId == null) {
             if (!await service.lierAuto(courant)) continue;
-            await Future.delayed(intervalleRequetes);
+            await _attendre(intervalleRequetes);
+            if (!_doitContinuer) break;
             final relu = await dao.getManga(courant.id);
             if (relu == null || relu.anilistId == null) continue;
             courant = relu;
           }
           await service.syncOne(courant);
         } on AnilistRateLimitException catch (e) {
-          await Future.delayed(e.retryAfter);
+          await _attendre(e.retryAfter);
         } on AnilistNetworkException {
           break;
         } catch (_) {
           break;
         }
-        await Future.delayed(intervalleRequetes);
+        await _attendre(intervalleRequetes);
       }
     } finally {
       _enCours = false;
@@ -107,6 +123,7 @@ class SyncEngine {
     if (_enCours) return;
     if (!_ref.read(syncPrefsProvider).maitre) return;
     _enCours = true;
+    _arretDemande = false;
     _ref.read(syncEnCoursProvider.notifier).set(true);
     try {
       final dao = _ref.read(mangaDaoProvider);
@@ -115,7 +132,8 @@ class SyncEngine {
       if (manga == null) return;
       if (manga.anilistId == null) {
         if (!await service.lierAuto(manga)) return;
-        await Future.delayed(intervalleRequetes);
+        await _attendre(intervalleRequetes);
+        if (!_doitContinuer) return;
         manga = await dao.getManga(id);
         if (manga == null || manga.anilistId == null) return;
       }

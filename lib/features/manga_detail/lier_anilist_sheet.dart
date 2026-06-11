@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:folio/app/theme.dart';
 import 'package:folio/services/anilist/anilist_client.dart';
 import 'package:folio/services/anilist/anilist_models.dart';
+import 'package:folio/services/anilist/sync_service.dart';
 
 Future<AnilistSearchResult?> showLierAnilistSheet(
   BuildContext context,
@@ -177,7 +178,7 @@ class _LierAnilistSheetState extends State<_LierAnilistSheet> {
             child: SizedBox(
               width: 42,
               height: 58,
-              child: r.vignetteUrl != null
+              child: r.vignetteUrl != null && urlCoverAutorisee(r.vignetteUrl!)
                   ? Image.network(
                       r.vignetteUrl!,
                       fit: BoxFit.cover,
