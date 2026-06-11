@@ -39,14 +39,11 @@ class _MangaDetailPage extends ConsumerState<MangaDetailPage> {
   late String _statutController;
   late String _typeController;
 
-  // Toggles de synchro de la fiche (combinés en « filtre ET » avec les
-  // réglages globaux des Paramètres).
   late bool _syncImage;
   late bool _syncDescription;
   late bool _syncGenres;
   late bool _syncType;
 
-  // Image de couverture (modifiable depuis la fiche).
   String? _imagePath;
   late String _imageSource;
 
@@ -115,24 +112,9 @@ class _MangaDetailPage extends ConsumerState<MangaDetailPage> {
     if (lien != null) setState(() => _liens.add(lien));
   }
 
-  Future<void> _plusUnChapitre() async {
-    HapticFeedback.lightImpact();
-    final actuel = double.tryParse(_chapitresController.text) ?? widget.mangaData.chapitres;
-    final nouveau = actuel + 1;
-    await _dao.updateMangaByElement(
-      widget.mangaData.id,
-      MangaTableCompanion(chapitres: Value(nouveau)),
-    );
-    setState(() {
-      _chapitresController.text =
-          nouveau % 1 == 0 ? nouveau.toInt().toString() : nouveau.toString();
-    });
-  }
-
   Future<void> _setToggleSync(MangaTableCompanion companion) =>
       _dao.updateMangaByElement(widget.mangaData.id, companion);
 
-  /// Menu d'actions sur la cover (tap sur l'image du header).
   void _ouvrirMenuImage() {
     showModalBottomSheet(
       context: context,
@@ -175,7 +157,6 @@ class _MangaDetailPage extends ConsumerState<MangaDetailPage> {
       final fichier = await ImagePicker().pickImage(source: ImageSource.gallery);
       if (fichier == null) return;
 
-      // Garde-fou taille avant de charger le fichier en mémoire.
       if (await fichier.length() > CoverService.tailleMaxOctets) {
         throw const CoverInvalideException('Image trop volumineuse (max 10 Mo)');
       }
@@ -185,8 +166,6 @@ class _MangaDetailPage extends ConsumerState<MangaDetailPage> {
         'cover_${widget.mangaData.id}.jpg',
       );
 
-      // Image personnalisée : on coupe la synchro de la cover pour ce manga
-      // (double verrou avec imageSource='utilisateur', voir ANILIST_SYNC.md).
       await _dao.updateMangaByElement(
         widget.mangaData.id,
         MangaTableCompanion(
@@ -201,8 +180,6 @@ class _MangaDetailPage extends ConsumerState<MangaDetailPage> {
         _imageSource = 'utilisateur';
         _syncImage = false;
       });
-      // L'image a changé sur disque mais garde le même chemin : on vide le
-      // cache pour que le header affiche la nouvelle version.
       FileImage(File(chemin)).evict();
       messenger.showSnackBar(SnackBar(
         backgroundColor: AppColors.info,
@@ -260,7 +237,6 @@ class _MangaDetailPage extends ConsumerState<MangaDetailPage> {
         appBar: AppBar(
           title: Text(_titre),
           actions: [
-            // Favori
             IconButton(
               onPressed: () async {
                 setState(() => _estFavori = !_estFavori);
@@ -274,7 +250,6 @@ class _MangaDetailPage extends ConsumerState<MangaDetailPage> {
                 color: Colors.red,
               ),
             ),
-            // Edition
             IconButton(
               onPressed: () async {
                 if (_modeEdition) {
@@ -289,7 +264,6 @@ class _MangaDetailPage extends ConsumerState<MangaDetailPage> {
               },
               icon: Icon(_modeEdition ? Icons.check : Icons.edit_outlined),
             ),
-            // Suppression
             IconButton(
               onPressed: () {
                 final nav = Navigator.of(context);
@@ -335,7 +309,6 @@ class _MangaDetailPage extends ConsumerState<MangaDetailPage> {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
 
-              // ── Header image (tap = changer la cover) ──
               Stack(
                 children: [
                   GestureDetector(
@@ -358,8 +331,6 @@ class _MangaDetailPage extends ConsumerState<MangaDetailPage> {
                             width: double.infinity,
                           ),
                   ),
-                  // IgnorePointer : sans lui, le dégradé absorberait les taps
-                  // destinés à l'image en dessous.
                   Positioned.fill(
                     child: IgnorePointer(
                       child: DecoratedBox(
@@ -373,7 +344,6 @@ class _MangaDetailPage extends ConsumerState<MangaDetailPage> {
                       ),
                     ),
                   ),
-                  // Pastille « changer la cover »
                   Positioned(
                     top: 12,
                     right: 12,
@@ -418,7 +388,6 @@ class _MangaDetailPage extends ConsumerState<MangaDetailPage> {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
 
-                    // ── Description ──
                     _SectionLabel('Description'),
                     _modeEdition
                         ? TextField(
@@ -441,7 +410,6 @@ class _MangaDetailPage extends ConsumerState<MangaDetailPage> {
                           ),
                     const SizedBox(height: 20),
 
-                    // ── Genres ──
                     _SectionLabel('Genres'),
                     _modeEdition
                         ? ExpansionTile(
@@ -493,7 +461,6 @@ class _MangaDetailPage extends ConsumerState<MangaDetailPage> {
                               ),
                     const SizedBox(height: 20),
 
-                    // ── Informations ──
                     _SectionLabel('Informations'),
                     _modeEdition
                         ? Column(
@@ -576,19 +543,7 @@ class _MangaDetailPage extends ConsumerState<MangaDetailPage> {
                                 ListTile(
                                   leading: const Icon(Icons.menu_book_outlined),
                                   title: const Text('Chapitres lus'),
-                                  trailing: Row(
-                                    mainAxisSize: MainAxisSize.min,
-                                    children: [
-                                      Text(_chapitresController.text, style: const TextStyle(color: Colors.grey)),
-                                      const SizedBox(width: 8),
-                                      IconButton.filledTonal(
-                                        onPressed: _plusUnChapitre,
-                                        tooltip: '+1 chapitre',
-                                        visualDensity: VisualDensity.compact,
-                                        icon: const Icon(Icons.plus_one, size: 18),
-                                      ),
-                                    ],
-                                  ),
+                                  trailing: Text(_chapitresController.text, style: const TextStyle(color: Colors.grey)),
                                 ),
                                 const Divider(height: 1, indent: 56),
                                 ListTile(
@@ -611,7 +566,6 @@ class _MangaDetailPage extends ConsumerState<MangaDetailPage> {
                           ),
                     const SizedBox(height: 20),
 
-                    // ── Liens ──
                     _SectionLabel('Liens d\'accès'),
                     _modeEdition
                         ? Column(
@@ -734,7 +688,6 @@ class _MangaDetailPage extends ConsumerState<MangaDetailPage> {
                               ),
                     const SizedBox(height: 20),
 
-                    // ── Synchronisation AniList ──
                     _SectionLabel('Synchronisation AniList'),
                     Card(
                       margin: EdgeInsets.zero,
@@ -817,8 +770,6 @@ class _MangaDetailPage extends ConsumerState<MangaDetailPage> {
   }
 }
 
-/// Toggle de synchro d'un champ pour cette fiche. Grisé avec explication
-/// quand le réglage global correspondant (ou le maître) est coupé.
 class _SyncToggleFiche extends StatelessWidget {
   final String label;
   final bool value;

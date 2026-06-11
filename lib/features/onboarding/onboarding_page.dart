@@ -4,7 +4,6 @@ import 'package:path_provider/path_provider.dart';
 import 'package:folio/app/theme.dart';
 import 'package:folio/features/home/home_page.dart';
 
-// ── Données des slides ─────────────────────────────────────
 class _Slide {
   final String tag;
   final String title;
@@ -44,7 +43,6 @@ const _slides = [
   ),
 ];
 
-// ── Flag premier lancement ─────────────────────────────────
 Future<bool> isFirstLaunch() async {
   final dir = await getApplicationDocumentsDirectory();
   final flag = File('${dir.path}/.onboarding_done');
@@ -57,14 +55,12 @@ Future<void> markOnboardingDone() async {
   await flag.writeAsString('done');
 }
 
-/// Permet de revoir l'introduction depuis les paramètres.
 Future<void> resetOnboarding() async {
   final dir = await getApplicationDocumentsDirectory();
   final flag = File('${dir.path}/.onboarding_done');
   if (flag.existsSync()) await flag.delete();
 }
 
-// ── Page onboarding ────────────────────────────────────────
 class OnboardingPage extends StatefulWidget {
   const OnboardingPage({super.key});
 
@@ -110,7 +106,6 @@ class _OnboardingPageState extends State<OnboardingPage> {
       backgroundColor: AppColors.backgroundDark,
       body: Stack(
         children: [
-          // Slides
           PageView.builder(
             controller: _controller,
             itemCount: _slides.length,
@@ -118,7 +113,6 @@ class _OnboardingPageState extends State<OnboardingPage> {
             itemBuilder: (_, i) => _SlidePage(slide: _slides[i]),
           ),
 
-          // Bouton passer (slides 1 et 2)
           if (_current < _slides.length - 1)
             Positioned(
               top: MediaQuery.of(context).padding.top + 16,
@@ -129,14 +123,12 @@ class _OnboardingPageState extends State<OnboardingPage> {
               ),
             ),
 
-          // Bas : dots + bouton
           Positioned(
             bottom: MediaQuery.of(context).padding.bottom + 40,
             left: 28,
             right: 28,
             child: Column(
               children: [
-                // Dots
                 Row(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: List.generate(_slides.length, (i) {
@@ -155,7 +147,6 @@ class _OnboardingPageState extends State<OnboardingPage> {
                 ),
                 const SizedBox(height: 28),
 
-                // Bouton principal
                 SizedBox(
                   width: double.infinity,
                   child: AnimatedContainer(
@@ -204,7 +195,6 @@ class _OnboardingPageState extends State<OnboardingPage> {
   }
 }
 
-// ── Slide individuel ───────────────────────────────────────
 class _SlidePage extends StatelessWidget {
   final _Slide slide;
   const _SlidePage({required this.slide});
@@ -218,7 +208,6 @@ class _SlidePage extends StatelessWidget {
         children: [
           const SizedBox(height: 60),
 
-          // Illustration — cercle avec emoji
           Container(
             width: 180,
             height: 180,
@@ -245,7 +234,6 @@ class _SlidePage extends StatelessWidget {
 
           const SizedBox(height: 52),
 
-          // Tag
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 5),
             decoration: BoxDecoration(
@@ -265,7 +253,6 @@ class _SlidePage extends StatelessWidget {
 
           const SizedBox(height: 20),
 
-          // Titre
           Text(
             slide.title,
             textAlign: TextAlign.center,
@@ -279,7 +266,6 @@ class _SlidePage extends StatelessWidget {
 
           const SizedBox(height: 16),
 
-          // Description
           Text(
             slide.desc,
             textAlign: TextAlign.center,

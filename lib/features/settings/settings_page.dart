@@ -252,8 +252,6 @@ class _SettingsPage extends ConsumerState<SettingsPage> {
     );
   }
 
-  /// Valide un item du JSON d'import et le convertit en companion Drift.
-  /// Lève une [FormatException] si la structure est invalide.
   MangaTableCompanion _companionDepuisJson(dynamic item) {
     if (item is! Map<String, dynamic>) {
       throw const FormatException('Item invalide');
@@ -265,23 +263,17 @@ class _SettingsPage extends ConsumerState<SettingsPage> {
     final note = ((item['note'] as num?)?.toDouble() ?? 0).clamp(0.0, 10.0);
     final chapitres = ((item['chapitres'] as num?)?.toDouble() ?? 0).clamp(0.0, double.maxFinite);
 
-    // Les liens sont revalidés (schemes http/https uniquement) :
-    // un fichier partagé ne doit pas pouvoir injecter d'URL dangereuse.
     String? liensJson = item['liens'] as String?;
     if (liensJson != null && liensJson.isNotEmpty) {
       final liens = liensFromJson(liensJson).where((l) => urlEstValide(l.url)).toList();
       liensJson = liensToJson(liens);
     }
 
-    // Champs synchro (schéma v4) — tolérés absents pour que les anciennes
-    // sauvegardes restent importables.
     final anilistId = (item['anilistId'] as num?)?.toInt();
     final lastSyncedAt = item['lastSyncedAt'] is String
         ? DateTime.tryParse(item['lastSyncedAt'] as String)
         : null;
 
-    // Un chemin d'image vient d'un autre appareil dans la plupart des cas :
-    // on ne le garde que si le fichier existe réellement ici.
     String? imagePath = item['imagePath'] as String?;
     if (imagePath != null && !File(imagePath).existsSync()) {
       imagePath = null;
@@ -345,16 +337,12 @@ class _SettingsPage extends ConsumerState<SettingsPage> {
                 if (result == null) return;
 
                 final fichier = File(result.files.single.path!);
-                // Garde-fou : un export Folio fait quelques Ko, on refuse
-                // tout fichier anormalement gros avant de le lire en mémoire.
                 if (await fichier.length() > 10 * 1024 * 1024) {
                   throw const FormatException('Fichier trop volumineux');
                 }
                 final contenu = await fichier.readAsString();
                 final List<dynamic> listeJson = jsonDecode(contenu);
 
-                // On valide TOUT avant d'écrire quoi que ce soit : si un
-                // item est corrompu, la bibliothèque actuelle est intacte.
                 final companions =
                     listeJson.map((item) => _companionDepuisJson(item)).toList();
 
@@ -387,7 +375,6 @@ class _SettingsPage extends ConsumerState<SettingsPage> {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
 
-            // ── Général ──
             _SectionLabel('Général'),
             Card(
               margin: EdgeInsets.zero,
@@ -423,7 +410,6 @@ class _SettingsPage extends ConsumerState<SettingsPage> {
             ),
             const SizedBox(height: 24),
 
-            // ── Données ──
             _SectionLabel('Données'),
             Card(
               margin: EdgeInsets.zero,
@@ -457,7 +443,6 @@ class _SettingsPage extends ConsumerState<SettingsPage> {
             ),
             const SizedBox(height: 24),
 
-            // ── Synchronisation AniList ──
             _SectionLabel('Synchronisation'),
             Card(
               margin: EdgeInsets.zero,
@@ -540,7 +525,6 @@ class _SettingsPage extends ConsumerState<SettingsPage> {
             ),
             const SizedBox(height: 24),
 
-            // ── À propos ──
             _SectionLabel('À propos'),
             Card(
               margin: EdgeInsets.zero,
@@ -584,7 +568,6 @@ class _SettingsPage extends ConsumerState<SettingsPage> {
   }
 }
 
-/// Interrupteur global d'un champ de synchro, grisé quand le maître est coupé.
 class _SyncFieldSwitch extends StatelessWidget {
   final String label;
   final bool value;

@@ -431,8 +431,6 @@ class _LibraryPage extends ConsumerState<LibraryPage> {
             if (_filtreType != null && m.typeManga != _filtreType) return false;
             if (_filtreFavori != null && m.estFavori != _filtreFavori) return false;
             if (m.note < _filtreNote.start || m.note > _filtreNote.end) return false;
-            // La borne haute n'est appliquée que si l'utilisateur l'a déplacée :
-            // sinon un manga à 1000+ chapitres serait masqué par défaut.
             if (m.chapitres < _filtreChapitres.start) return false;
             if (_filtreChapitres.end < 1000 && m.chapitres > _filtreChapitres.end) return false;
             return true;
@@ -497,7 +495,6 @@ class _LibraryPage extends ConsumerState<LibraryPage> {
     );
   }
 
-  /// Construit la liste selon le mode de vue choisi par l'utilisateur.
   Widget _buildContenu(List<MangaTableData> liste, ViewMode mode) {
     const padding = EdgeInsets.fromLTRB(12, 4, 12, 80);
     switch (mode) {
@@ -521,7 +518,7 @@ class _LibraryPage extends ConsumerState<LibraryPage> {
           separatorBuilder: (_, _) => const SizedBox(height: 8),
           itemBuilder: (context, i) => _wrapItem(
             liste[i],
-            MangaListTile(mangaData: liste[i], selectionActive: _modeSelection),
+            MangaListTile(mangaData: liste[i]),
           ),
         );
       case ViewMode.compact:
@@ -535,8 +532,6 @@ class _LibraryPage extends ConsumerState<LibraryPage> {
     }
   }
 
-  /// Gestes communs à toutes les vues : tap (détail ou sélection),
-  /// appui long (mode sélection), et voile de sélection.
   Widget _wrapItem(MangaTableData manga, Widget child) {
     final isSelected = _mangaSelectionne.contains(manga);
     return InkWell(

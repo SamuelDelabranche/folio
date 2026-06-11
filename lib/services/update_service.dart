@@ -26,7 +26,6 @@ class UpdateService {
   }
 
   static bool _isNewer(String latest, String current) {
-    // Tolère les suffixes type "1.2.0-beta" : on n'extrait que les chiffres.
     int parsePart(String s) =>
         int.tryParse(RegExp(r'\d+').firstMatch(s)?.group(0) ?? '') ?? 0;
     final l = latest.split('.').map(parsePart).toList();
@@ -40,8 +39,6 @@ class UpdateService {
     return false;
   }
 
-  /// [force] ignore l'intervalle de 24 h (vérification manuelle depuis les
-  /// paramètres) et propage les erreurs réseau pour pouvoir les afficher.
   static Future<UpdateInfo?> checkForUpdate({bool force = false}) async {
     if (!force && !await _shouldCheck()) return null;
 

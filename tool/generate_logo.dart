@@ -1,19 +1,10 @@
-// Génère les assets du logo Folio (F marque-page sur dégradé violet→magenta).
-// Usage : dart run tool/generate_logo.dart
-//
-// Produit dans assets/splash/ :
-//   logo.png            — tuile arrondie dégradée + F blanc (icône legacy + splash)
-//   logo_foreground.png — F blanc seul, centré dans la safe-zone (adaptive icon)
-//   logo_background.png — dégradé plein cadre (adaptive icon)
 import 'dart:io';
 import 'dart:math';
 import 'package:image/image.dart' as img;
 
-// Rendu en 2048 puis réduction à 1024 pour lisser les bords.
 const int render = 2048;
 const int output = 1024;
 
-// Couleurs de la charte (AppColors.primary / AppColors.accent).
 const _violet = (0x7C, 0x3A, 0xED);
 const _magenta = (0xEC, 0x48, 0x99);
 
@@ -26,23 +17,17 @@ const _magenta = (0xEC, 0x48, 0x99);
   );
 }
 
-/// Le F marque-page en coordonnées "tuile 160" (mêmes proportions que la
-/// maquette validée) : barre verticale avec encoche en V + deux bras.
 bool inMark(double tx, double ty) {
-  // Barre verticale (marque-page) : x 46..66, y 38..124, coins hauts arrondis.
   if (tx >= 46 && tx <= 66 && ty >= 38 && ty <= 124) {
     const r = 6.0;
     if (ty < 38 + r) {
       if (tx < 46 + r && _hors(tx, ty, 46 + r, 38 + r, r)) return false;
       if (tx > 66 - r && _hors(tx, ty, 66 - r, 38 + r, r)) return false;
     }
-    // Encoche en V : sommet (56,112), base (46,124)-(66,124).
     if (ty >= 112 + 12 * (tx - 56).abs() / 10) return false;
     return true;
   }
-  // Bras supérieur : x 66..114, y 38..56, coins droits arrondis.
   if (_dansBras(tx, ty, 66, 38, 114, 56)) return true;
-  // Bras central : x 66..102, y 70..88.
   if (_dansBras(tx, ty, 66, 70, 102, 88)) return true;
   return false;
 }
@@ -75,10 +60,9 @@ void save(img.Image image, String path) {
 
 void main() {
   final size = render.toDouble();
-  final tuile = size / 160; // échelle coordonnées tuile → pixels
+  final tuile = size / 160;
   final radius = size * 0.225;
 
-  // ── logo.png : tuile arrondie + F blanc ──
   final logo = img.Image(width: render, height: render, numChannels: 4);
   for (var py = 0; py < render; py++) {
     for (var px = 0; px < render; px++) {
@@ -94,7 +78,6 @@ void main() {
   }
   save(logo, 'assets/splash/logo.png');
 
-  // ── logo_background.png : dégradé plein cadre ──
   final fond = img.Image(width: render, height: render, numChannels: 4);
   for (var py = 0; py < render; py++) {
     for (var px = 0; px < render; px++) {
@@ -104,13 +87,11 @@ void main() {
   }
   save(fond, 'assets/splash/logo_background.png');
 
-  // ── logo_foreground.png : F blanc seul, ~40% de hauteur (safe-zone 66%) ──
   final avant = img.Image(width: render, height: render, numChannels: 4);
-  // bbox du F en coordonnées tuile : x 46..114, y 38..124
   final hauteurCible = size * 0.40;
-  final echelle = hauteurCible / 86; // 86 = hauteur du F en unités tuile
-  final dx = size / 2 - 80 * echelle; // 80 = centre x du F
-  final dy = size / 2 - 81 * echelle; // 81 = centre y du F
+  final echelle = hauteurCible / 86;
+  final dx = size / 2 - 80 * echelle;
+  final dy = size / 2 - 81 * echelle;
   for (var py = 0; py < render; py++) {
     for (var px = 0; px < render; px++) {
       final tx = (px + 0.5 - dx) / echelle;

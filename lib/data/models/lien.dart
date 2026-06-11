@@ -21,9 +21,6 @@ List<Lien> liensFromJson(String? json) {
 String liensToJson(List<Lien> liens) =>
     jsonEncode(liens.map((l) => l.toMap()).toList());
 
-/// Seuls http/https sont autorisés : bloque les schemes dangereux
-/// (file://, javascript:, intent://...) qui pourraient arriver
-/// via un fichier d'import partagé.
 bool urlEstValide(String url) {
   final uri = Uri.tryParse(url.trim());
   return uri != null &&

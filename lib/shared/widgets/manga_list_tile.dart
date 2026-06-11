@@ -1,36 +1,19 @@
 import 'dart:io';
 
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
-import 'package:drift/drift.dart' hide Column;
-import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:folio/app/providers.dart';
 import 'package:folio/app/theme.dart';
 import 'package:folio/data/database/app_database.dart';
 
-/// Tuile de la vue liste : vignette, statut, note, chapitres,
-/// et bouton « +1 chapitre » pour mettre à jour sa lecture en un geste.
-class MangaListTile extends ConsumerWidget {
+class MangaListTile extends StatelessWidget {
   final MangaTableData mangaData;
-  final bool selectionActive;
 
   const MangaListTile({
     super.key,
     required this.mangaData,
-    this.selectionActive = false,
   });
 
-  Future<void> _plusUnChapitre(WidgetRef ref) async {
-    HapticFeedback.lightImpact();
-    final dao = ref.read(mangaDaoProvider);
-    await dao.updateMangaByElement(
-      mangaData.id,
-      MangaTableCompanion(chapitres: Value(mangaData.chapitres + 1)),
-    );
-  }
-
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  Widget build(BuildContext context) {
     final couleurStatut = AppColors.couleurStatut(mangaData.status);
     final pastel = AppColors.pastels[mangaData.id % AppColors.pastels.length];
 
@@ -41,7 +24,6 @@ class MangaListTile extends ConsumerWidget {
         padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
         child: Row(
           children: [
-            // Vignette : cover réelle si présente, sinon pastel + initiale.
             ClipRRect(
               borderRadius: BorderRadius.circular(8),
               child: SizedBox(
@@ -120,15 +102,6 @@ class MangaListTile extends ConsumerWidget {
                 ],
               ),
             ),
-            if (!selectionActive) ...[
-              const SizedBox(width: 8),
-              IconButton.filledTonal(
-                onPressed: () => _plusUnChapitre(ref),
-                tooltip: '+1 chapitre',
-                visualDensity: VisualDensity.compact,
-                icon: const Icon(Icons.plus_one, size: 20),
-              ),
-            ],
           ],
         ),
       ),
@@ -160,7 +133,6 @@ class _VignettePastel extends StatelessWidget {
   }
 }
 
-/// Tuile de la vue compacte : une ligne dense, pour les grosses bibliothèques.
 class MangaCompactTile extends StatelessWidget {
   final MangaTableData mangaData;
 

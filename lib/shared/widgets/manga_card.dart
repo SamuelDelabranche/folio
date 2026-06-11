@@ -21,9 +21,6 @@ class MangaCard extends StatelessWidget {
           Expanded(
             child: Stack(
               children: [
-                // Cover réelle si présente, sinon placeholder pastel.
-                // errorBuilder : un chemin pointant vers un fichier disparu
-                // ne doit jamais casser la grille.
                 if (mangaData.imagePath != null)
                   Positioned.fill(
                     child: Image.file(

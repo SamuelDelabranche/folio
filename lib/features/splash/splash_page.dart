@@ -22,7 +22,7 @@ class _SplashPageState extends State<SplashPage> with TickerProviderStateMixin {
   late Animation<double> _subtitleOpacity;
   late Animation<double> _versionOpacity;
 
-  late AnimationController _breathController; // halo qui "respire"
+  late AnimationController _breathController;
   late AnimationController _particleController;
   late AnimationController _exitController;
   late Animation<double> _exitOpacity;
@@ -38,7 +38,6 @@ class _SplashPageState extends State<SplashPage> with TickerProviderStateMixin {
     super.initState();
     _spawnParticles();
 
-    // ── Intro : fondu net, sans rebond ────────────────
     _introController = AnimationController(
       duration: const Duration(milliseconds: 1400),
       vsync: this,
@@ -68,19 +67,16 @@ class _SplashPageState extends State<SplashPage> with TickerProviderStateMixin {
       CurvedAnimation(parent: _introController,
           curve: const Interval(0.7, 1.0, curve: Curves.easeOut)));
 
-    // ── Halo respirant derrière le logo ───────────────
     _breathController = AnimationController(
       duration: const Duration(milliseconds: 2400),
       vsync: this,
     )..repeat(reverse: true);
 
-    // ── Particules ────────────────────────────────────
     _particleController = AnimationController(
       duration: const Duration(seconds: 6),
       vsync: this,
     )..repeat();
 
-    // ── Sortie ────────────────────────────────────────
     _exitController = AnimationController(
       duration: const Duration(milliseconds: 450),
       vsync: this,
@@ -89,7 +85,6 @@ class _SplashPageState extends State<SplashPage> with TickerProviderStateMixin {
       CurvedAnimation(parent: _exitController, curve: Curves.easeInCubic));
 
     _introController.forward();
-    // Court : le splash ne doit jamais donner l'impression de faire attendre.
     _navTimer = Timer(const Duration(milliseconds: 2200), _navigate);
   }
 
@@ -106,7 +101,6 @@ class _SplashPageState extends State<SplashPage> with TickerProviderStateMixin {
     }
   }
 
-  /// Un tap n'importe où passe le splash immédiatement.
   void _passer() {
     _navTimer?.cancel();
     _navigate();
@@ -155,7 +149,6 @@ class _SplashPageState extends State<SplashPage> with TickerProviderStateMixin {
           child: Stack(
             children: [
 
-              // ── Fond dégradé radial subtil ─────────────────
               Positioned.fill(
                 child: DecoratedBox(
                   decoration: BoxDecoration(
@@ -168,7 +161,6 @@ class _SplashPageState extends State<SplashPage> with TickerProviderStateMixin {
                 ),
               ),
 
-              // ── Particules ─────────────────────────────────
               RepaintBoundary(
                 child: AnimatedBuilder(
                   animation: _particleController,
@@ -179,7 +171,6 @@ class _SplashPageState extends State<SplashPage> with TickerProviderStateMixin {
                 ),
               ),
 
-              // ── Contenu ────────────────────────────────────
               Center(
                 child: AnimatedBuilder(
                   animation: Listenable.merge([_introController, _breathController]),
@@ -189,7 +180,6 @@ class _SplashPageState extends State<SplashPage> with TickerProviderStateMixin {
                       mainAxisSize: MainAxisSize.min,
                       children: [
 
-                        // Logo : tuile arrondie + halo respirant
                         FadeTransition(
                           opacity: _logoOpacity,
                           child: Transform.scale(
@@ -221,7 +211,6 @@ class _SplashPageState extends State<SplashPage> with TickerProviderStateMixin {
 
                         const SizedBox(height: 44),
 
-                        // FOLIO
                         SlideTransition(
                           position: _titleSlide,
                           child: FadeTransition(
@@ -245,7 +234,6 @@ class _SplashPageState extends State<SplashPage> with TickerProviderStateMixin {
 
                         const SizedBox(height: 10),
 
-                        // MANGA TRACKER
                         FadeTransition(
                           opacity: _subtitleOpacity,
                           child: Text(
@@ -263,7 +251,6 @@ class _SplashPageState extends State<SplashPage> with TickerProviderStateMixin {
                 ),
               ),
 
-              // ── Version en bas ─────────────────────────────
               Positioned(
                 left: 0,
                 right: 0,
@@ -292,7 +279,6 @@ class _SplashPageState extends State<SplashPage> with TickerProviderStateMixin {
   }
 }
 
-// ── Particule ─────────────────────────────────────────────
 class _Particle {
   final double x, y, size, opacity, speed, phase;
   const _Particle({

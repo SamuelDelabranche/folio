@@ -49,7 +49,6 @@ class StatisticsPage extends ConsumerWidget {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                // ── Vue d'ensemble ──
                 Card(
                   child: Padding(
                     padding: const EdgeInsets.symmetric(vertical: 20, horizontal: 16),
@@ -83,7 +82,6 @@ class StatisticsPage extends ConsumerWidget {
                 ),
                 const SizedBox(height: 12),
 
-                // ── Par statut ──
                 _SectionCard(
                   title: 'Par statut',
                   child: Column(
@@ -97,7 +95,6 @@ class StatisticsPage extends ConsumerWidget {
                 ),
                 const SizedBox(height: 12),
 
-                // ── Par type ──
                 _SectionCard(
                   title: 'Par type',
                   child: Column(
@@ -111,7 +108,6 @@ class StatisticsPage extends ConsumerWidget {
                 ),
                 const SizedBox(height: 12),
 
-                // ── Top genres ──
                 _SectionCard(
                   title: 'Top genres',
                   child: top5.isEmpty
@@ -139,7 +135,6 @@ class StatisticsPage extends ConsumerWidget {
   }
 }
 
-// ── Stat vue d'ensemble ──
 class _OverviewStat extends StatelessWidget {
   final String value;
   final String label;
@@ -167,7 +162,6 @@ class _OverviewStat extends StatelessWidget {
   }
 }
 
-// ── Card de section ──
 class _SectionCard extends StatelessWidget {
   final String title;
   final Widget child;
@@ -192,7 +186,6 @@ class _SectionCard extends StatelessWidget {
   }
 }
 
-// ── Ligne barre de progression ──
 class _ProgressRow extends StatelessWidget {
   final String label;
   final int count;

@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 
-/// Transition fade + léger zoom (style iOS moderne)
 Route<T> fadeScaleRoute<T>(Widget page) {
   return PageRouteBuilder<T>(
     pageBuilder: (context, animation, secondaryAnimation) => page,

@@ -51,3 +51,5 @@ app.*.map.json
 # Signing — ne jamais committer ces fichiers
 android/key.properties
 android/*.jks
+# Docs internes (jamais sur GitHub)
+docs/

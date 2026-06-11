@@ -1,8 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:folio/data/models/lien.dart';
 
-/// Dialogue d'ajout de lien, partagé entre l'ajout et la fiche manga.
-/// Retourne le [Lien] créé, ou null si l'utilisateur annule.
 Future<Lien?> showAjouterLienDialog(BuildContext context) {
   final nomController = TextEditingController();
   final urlController = TextEditingController();

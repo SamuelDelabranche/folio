@@ -6,9 +6,6 @@ import 'package:shared_preferences/shared_preferences.dart';
 
 final databaseProvider = Provider<AppDatabase>((ref) => AppDatabase());
 final mangaDaoProvider = Provider<MangaDao>((ref) => MangaDao(ref.read(databaseProvider)));
-/// Flux réactif sur la table des mangas : toute écriture en base (ajout,
-/// édition, import, synchro d'arrière-plan) met l'UI à jour sans
-/// `ref.invalidate`.
 final mangasProvider = StreamProvider<List<MangaTableData>>((ref) {
   final dao = ref.read(mangaDaoProvider);
   return dao.watchAllMangas();
@@ -16,7 +13,6 @@ final mangasProvider = StreamProvider<List<MangaTableData>>((ref) {
 
 final themeModeProvider = NotifierProvider<ThemeModeNotifier, ThemeMode>(ThemeModeNotifier.new);
 
-/// Onglet affiché au lancement (0 = Bibliothèque, 1 = Statistiques, 2 = Paramètres).
 final startTabProvider = NotifierProvider<StartTabNotifier, int>(StartTabNotifier.new);
 
 class StartTabNotifier extends Notifier<int> {
@@ -37,7 +33,6 @@ class StartTabNotifier extends Notifier<int> {
   }
 }
 
-/// Modes d'affichage de la bibliothèque.
 enum ViewMode { grille, liste, compact }
 
 final viewModeProvider = NotifierProvider<ViewModeNotifier, ViewMode>(ViewModeNotifier.new);
@@ -54,7 +49,6 @@ class ViewModeNotifier extends Notifier<ViewMode> {
     await prefs.setString(_key, mode.name);
   }
 
-  /// Passe au mode suivant (bouton de bascule dans la bibliothèque).
   Future<void> suivant() =>
       set(ViewMode.values[(state.index + 1) % ViewMode.values.length]);
 
@@ -70,9 +64,6 @@ class ViewModeNotifier extends Notifier<ViewMode> {
   }
 }
 
-/// Réglages globaux de synchronisation AniList (logique « filtre ET » :
-/// un champ n'est synchronisé que si son toggle global ET celui de la
-/// fiche manga sont actifs — voir docs/ANILIST_SYNC.md).
 class SyncPrefs {
   final bool maitre;
   final bool image;

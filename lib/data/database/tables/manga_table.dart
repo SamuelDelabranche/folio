@@ -17,9 +17,6 @@ class MangaTable extends Table{
 
   TextColumn get liens => text().nullable()();
 
-  // ── Synchronisation AniList (schéma v4) ──
-  // Voir docs/ANILIST_SYNC.md. Les toggles sync* sont combinés en "filtre ET"
-  // avec les réglages globaux des Paramètres.
   IntColumn get anilistId => integer().nullable()();
   DateTimeColumn get lastSyncedAt => dateTime().nullable()();
   BoolColumn get syncImage => boolean().withDefault(const Constant(true))();
@@ -27,7 +24,5 @@ class MangaTable extends Table{
   BoolColumn get syncGenres => boolean().withDefault(const Constant(true))();
   BoolColumn get syncType => boolean().withDefault(const Constant(true))();
 
-  /// Provenance de l'image : 'aucune' | 'utilisateur' | 'anilist'.
-  /// Une image 'utilisateur' n'est jamais écrasée par la synchro.
   TextColumn get imageSource => text().withDefault(const Constant('aucune'))();
 }

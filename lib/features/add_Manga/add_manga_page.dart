@@ -61,7 +61,6 @@ class _AddMangaPageState extends ConsumerState<AddMangaPage> {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
 
-              // ── Titre ──
               TextFormField(
                 controller: _titreController,
                 textCapitalization: TextCapitalization.sentences,
@@ -70,7 +69,6 @@ class _AddMangaPageState extends ConsumerState<AddMangaPage> {
               ),
               const SizedBox(height: 16),
 
-              // ── Chapitres ──
               TextFormField(
                 keyboardType: TextInputType.number,
                 controller: _chapitreController,
@@ -84,7 +82,6 @@ class _AddMangaPageState extends ConsumerState<AddMangaPage> {
               ),
               const SizedBox(height: 24),
 
-              // ── Note ──
               Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
@@ -114,7 +111,6 @@ class _AddMangaPageState extends ConsumerState<AddMangaPage> {
               ),
               const SizedBox(height: 8),
 
-              // ── Type ──
               const Text('Type', style: TextStyle(fontWeight: FontWeight.w500)),
               const SizedBox(height: 8),
               Wrap(
@@ -130,7 +126,6 @@ class _AddMangaPageState extends ConsumerState<AddMangaPage> {
               ),
               const SizedBox(height: 16),
 
-              // ── Statut ──
               const Text('Statut', style: TextStyle(fontWeight: FontWeight.w500)),
               const SizedBox(height: 8),
               Wrap(
@@ -146,7 +141,6 @@ class _AddMangaPageState extends ConsumerState<AddMangaPage> {
               ),
               const SizedBox(height: 16),
 
-              // ── Genres ──
               ExpansionTile(
                 title: Text(
                   _genreSelectionne.isEmpty
@@ -189,7 +183,6 @@ class _AddMangaPageState extends ConsumerState<AddMangaPage> {
               ),
               const SizedBox(height: 8),
 
-              // ── Favori ──
               SizedBox(
                 width: double.infinity,
                 height: 50,
@@ -208,7 +201,6 @@ class _AddMangaPageState extends ConsumerState<AddMangaPage> {
               ),
               const SizedBox(height: 24),
 
-              // ── Liens ──
               Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
@@ -250,7 +242,6 @@ class _AddMangaPageState extends ConsumerState<AddMangaPage> {
               ],
               const SizedBox(height: 16),
 
-              // ── Bouton ──
               FilledButton.icon(
                 style: FilledButton.styleFrom(
                   minimumSize: const Size(double.infinity, 50),

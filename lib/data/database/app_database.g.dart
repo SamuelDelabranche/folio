@@ -489,9 +489,6 @@ class MangaTableData extends DataClass implements Insertable<MangaTableData> {
   final bool syncDescription;
   final bool syncGenres;
   final bool syncType;
-
-  /// Provenance de l'image : 'aucune' | 'utilisateur' | 'anilist'.
-  /// Une image 'utilisateur' n'est jamais écrasée par la synchro.
   final String imageSource;
   const MangaTableData({
     required this.id,
