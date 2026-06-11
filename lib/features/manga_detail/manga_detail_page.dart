@@ -9,6 +9,7 @@ import 'package:folio/app/theme.dart';
 import 'package:folio/data/database/app_database.dart';
 import 'package:folio/data/database/daos/manga_dao.dart';
 import 'package:folio/data/models/lien.dart';
+import 'package:folio/features/manga_detail/lier_anilist_sheet.dart';
 import 'package:folio/services/cover_service.dart';
 import 'package:folio/shared/widgets/lien_dialog.dart';
 import 'package:image_picker/image_picker.dart';
@@ -46,6 +47,8 @@ class _MangaDetailPage extends ConsumerState<MangaDetailPage> {
 
   String? _imagePath;
   late String _imageSource;
+  int? _anilistId;
+  DateTime? _lastSyncedAt;
 
   @override
   void initState() {
@@ -58,6 +61,8 @@ class _MangaDetailPage extends ConsumerState<MangaDetailPage> {
     _syncType = widget.mangaData.syncType;
     _imagePath = widget.mangaData.imagePath;
     _imageSource = widget.mangaData.imageSource;
+    _anilistId = widget.mangaData.anilistId;
+    _lastSyncedAt = widget.mangaData.lastSyncedAt;
     _titre = widget.mangaData.titre;
     _noteEdition = widget.mangaData.note;
     _titreController = TextEditingController(text: widget.mangaData.titre);
@@ -114,6 +119,41 @@ class _MangaDetailPage extends ConsumerState<MangaDetailPage> {
 
   Future<void> _setToggleSync(MangaTableCompanion companion) =>
       _dao.updateMangaByElement(widget.mangaData.id, companion);
+
+  Future<void> _lier() async {
+    final resultat = await showLierAnilistSheet(context, _titre);
+    if (resultat == null) return;
+    await _dao.updateMangaByElement(
+      widget.mangaData.id,
+      MangaTableCompanion(anilistId: Value(resultat.id)),
+    );
+    if (!mounted) return;
+    setState(() => _anilistId = resultat.id);
+  }
+
+  Future<void> _delier() async {
+    if (_imageSource == 'anilist') {
+      await CoverService.supprimerCover(_imagePath);
+    }
+    await _dao.updateMangaByElement(
+      widget.mangaData.id,
+      MangaTableCompanion(
+        anilistId: const Value(null),
+        lastSyncedAt: const Value(null),
+        imagePath: _imageSource == 'anilist' ? const Value(null) : Value(_imagePath),
+        imageSource: _imageSource == 'anilist' ? const Value('aucune') : Value(_imageSource),
+      ),
+    );
+    if (!mounted) return;
+    setState(() {
+      _anilistId = null;
+      _lastSyncedAt = null;
+      if (_imageSource == 'anilist') {
+        _imagePath = null;
+        _imageSource = 'aucune';
+      }
+    });
+  }
 
   void _ouvrirMenuImage() {
     showModalBottomSheet(
@@ -698,19 +738,23 @@ class _MangaDetailPage extends ConsumerState<MangaDetailPage> {
                             children: [
                               ListTile(
                                 leading: Icon(
-                                  widget.mangaData.anilistId != null
+                                  _anilistId != null
                                       ? Icons.cloud_done_outlined
                                       : Icons.cloud_off_outlined,
-                                  color: widget.mangaData.anilistId != null
+                                  color: _anilistId != null
                                       ? AppColors.success
                                       : Colors.grey,
                                 ),
-                                title: Text(widget.mangaData.anilistId != null
-                                    ? 'Lié à AniList (#${widget.mangaData.anilistId})'
+                                title: Text(_anilistId != null
+                                    ? 'Lié à AniList (#$_anilistId)'
                                     : 'Non lié à AniList'),
-                                subtitle: Text(widget.mangaData.lastSyncedAt != null
-                                    ? 'Dernière synchro : ${_formatDate(widget.mangaData.lastSyncedAt!)}'
+                                subtitle: Text(_lastSyncedAt != null
+                                    ? 'Dernière synchro : ${_formatDate(_lastSyncedAt!)}'
                                     : 'Jamais synchronisé'),
+                                trailing: TextButton(
+                                  onPressed: _anilistId != null ? _delier : _lier,
+                                  child: Text(_anilistId != null ? 'Délier' : 'Lier'),
+                                ),
                               ),
                               const Divider(height: 1, indent: 56),
                               _SyncToggleFiche(
