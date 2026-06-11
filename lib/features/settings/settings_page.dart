@@ -253,6 +253,46 @@ class _SettingsPage extends ConsumerState<SettingsPage> {
     );
   }
 
+  Future<void> _toutLier() async {
+    final messenger = ScaffoldMessenger.of(context);
+    final mangas = await _dao.getAllMangas();
+    final nonLies = mangas.where((m) => m.anilistId == null).length;
+    if (!mounted) return;
+    if (nonLies == 0) {
+      messenger.showSnackBar(SnackBar(
+        backgroundColor: AppColors.success,
+        content: const Text('Tous les mangas sont déjà liés', textAlign: TextAlign.center, style: TextStyle(color: Colors.black87)),
+      ));
+      return;
+    }
+    final secondes = (nonLies * 5).ceil();
+    final estimation = secondes < 60 ? '$secondes s' : '${(secondes / 60).ceil()} min';
+    showDialog(
+      context: context,
+      builder: (dialogContext) => AlertDialog(
+        icon: const Icon(Icons.add_link, size: 44),
+        title: const Text('Tout lier ?'),
+        content: Text(
+          '$nonLies manga(s) non lié(s) — environ $estimation.\n\nChaque manga sera lié à la fiche AniList correspondant le mieux à son titre, puis synchronisé. Tu pourras corriger une liaison depuis la fiche (mode édition).',
+          textAlign: TextAlign.center,
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(dialogContext),
+            child: const Text('Annuler'),
+          ),
+          FilledButton(
+            onPressed: () {
+              Navigator.pop(dialogContext);
+              ref.read(syncEngineProvider).lierTout();
+            },
+            child: const Text('Lancer'),
+          ),
+        ],
+      ),
+    );
+  }
+
   Future<void> _toutResynchroniser() async {
     final messenger = ScaffoldMessenger.of(context);
     final mangas = await _dao.getAllMangas();
@@ -547,12 +587,24 @@ class _SettingsPage extends ConsumerState<SettingsPage> {
                               onTap: () => ref.read(syncEngineProvider).annuler(),
                             );
                           }
-                          return _SettingsTile(
-                            icon: Icons.sync,
-                            iconColor: AppColors.primary,
-                            title: 'Tout resynchroniser',
-                            subtitle: 'Met à jour tous les mangas liés maintenant',
-                            onTap: sync.maitre ? _toutResynchroniser : null,
+                          return Column(
+                            children: [
+                              _SettingsTile(
+                                icon: Icons.add_link,
+                                iconColor: AppColors.accent,
+                                title: 'Tout lier',
+                                subtitle: 'Lie automatiquement les mangas non liés',
+                                onTap: sync.maitre ? _toutLier : null,
+                              ),
+                              const Divider(height: 1, indent: 68),
+                              _SettingsTile(
+                                icon: Icons.sync,
+                                iconColor: AppColors.primary,
+                                title: 'Tout resynchroniser',
+                                subtitle: 'Met à jour tous les mangas liés maintenant',
+                                onTap: sync.maitre ? _toutResynchroniser : null,
+                              ),
+                            ],
                           );
                         },
                       ),

@@ -119,6 +119,42 @@ class SyncEngine {
     }
   }
 
+  Future<void> lierTout() async {
+    if (_enCours) return;
+    if (!_ref.read(syncPrefsProvider).maitre) return;
+    _enCours = true;
+    _arretDemande = false;
+    _ref.read(syncEnCoursProvider.notifier).set(true);
+    try {
+      final dao = _ref.read(mangaDaoProvider);
+      final service = _ref.read(syncServiceProvider);
+      final nonLies = (await dao.getAllMangas())
+          .where((m) => m.anilistId == null)
+          .toList();
+      for (final manga in nonLies) {
+        if (!_doitContinuer) break;
+        try {
+          if (!await service.lierAuto(manga)) continue;
+          await _attendre(intervalleRequetes);
+          if (!_doitContinuer) break;
+          final relu = await dao.getManga(manga.id);
+          if (relu == null || relu.anilistId == null) continue;
+          await service.syncOne(relu);
+        } on AnilistRateLimitException catch (e) {
+          await _attendre(e.retryAfter);
+        } on AnilistNetworkException {
+          break;
+        } catch (_) {
+          break;
+        }
+        await _attendre(intervalleRequetes);
+      }
+    } finally {
+      _enCours = false;
+      _ref.read(syncEnCoursProvider.notifier).set(false);
+    }
+  }
+
   Future<void> syncManga(int id) async {
     if (_enCours) return;
     if (!_ref.read(syncPrefsProvider).maitre) return;
