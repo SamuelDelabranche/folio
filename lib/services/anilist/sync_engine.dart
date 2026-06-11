@@ -64,7 +64,6 @@ class SyncEngine {
       final service = _ref.read(syncServiceProvider);
       final tous = await dao.getAllMangas();
       final candidats = tous
-          .where((m) => m.anilistId != null)
           .where((m) =>
               force ||
               m.lastSyncedAt == null ||
@@ -80,7 +79,15 @@ class SyncEngine {
       for (final manga in candidats) {
         if (!_ref.read(syncPrefsProvider).maitre) break;
         try {
-          await service.syncOne(manga);
+          var courant = manga;
+          if (courant.anilistId == null) {
+            if (!await service.lierAuto(courant)) continue;
+            await Future.delayed(intervalleRequetes);
+            final relu = await dao.getManga(courant.id);
+            if (relu == null || relu.anilistId == null) continue;
+            courant = relu;
+          }
+          await service.syncOne(courant);
         } on AnilistRateLimitException catch (e) {
           await Future.delayed(e.retryAfter);
         } on AnilistNetworkException {
@@ -90,6 +97,30 @@ class SyncEngine {
         }
         await Future.delayed(intervalleRequetes);
       }
+    } finally {
+      _enCours = false;
+      _ref.read(syncEnCoursProvider.notifier).set(false);
+    }
+  }
+
+  Future<void> syncManga(int id) async {
+    if (_enCours) return;
+    if (!_ref.read(syncPrefsProvider).maitre) return;
+    _enCours = true;
+    _ref.read(syncEnCoursProvider.notifier).set(true);
+    try {
+      final dao = _ref.read(mangaDaoProvider);
+      final service = _ref.read(syncServiceProvider);
+      var manga = await dao.getManga(id);
+      if (manga == null) return;
+      if (manga.anilistId == null) {
+        if (!await service.lierAuto(manga)) return;
+        await Future.delayed(intervalleRequetes);
+        manga = await dao.getManga(id);
+        if (manga == null || manga.anilistId == null) return;
+      }
+      await service.syncOne(manga);
+    } catch (_) {
     } finally {
       _enCours = false;
       _ref.read(syncEnCoursProvider.notifier).set(false);

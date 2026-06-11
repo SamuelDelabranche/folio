@@ -25,6 +25,18 @@ class SyncService {
   SyncService(this._ref, [AnilistClient? clientInjecte])
       : client = clientInjecte ?? AnilistClient();
 
+  Future<bool> lierAuto(MangaTableData manga) async {
+    if (manga.anilistId != null) return true;
+    if (manga.titre.trim().isEmpty) return false;
+    final resultats = await client.search(manga.titre);
+    if (resultats.isEmpty) return false;
+    await _ref.read(mangaDaoProvider).updateMangaByElement(
+          manga.id,
+          MangaTableCompanion(anilistId: Value(resultats.first.id)),
+        );
+    return true;
+  }
+
   Future<bool> syncOne(MangaTableData manga) async {
     final prefs = _ref.read(syncPrefsProvider);
     if (!prefs.maitre || manga.anilistId == null) return false;

@@ -767,6 +767,7 @@ class _MangaDetailPage extends ConsumerState<MangaDetailPage> {
                               ),
                     const SizedBox(height: 20),
 
+                    if (_modeEdition) ...[
                     _SectionLabel('Synchronisation AniList'),
                     Card(
                       margin: EdgeInsets.zero,
@@ -864,6 +865,7 @@ class _MangaDetailPage extends ConsumerState<MangaDetailPage> {
                       ),
                     ),
                     const SizedBox(height: 24),
+                    ],
                   ],
                 ),
               ),

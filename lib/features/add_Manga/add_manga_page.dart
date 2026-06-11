@@ -6,6 +6,7 @@ import 'package:drift/drift.dart' hide Column;
 import 'package:folio/app/constants.dart';
 import 'package:folio/data/models/lien.dart';
 import 'package:folio/app/theme.dart';
+import 'package:folio/services/anilist/sync_engine.dart';
 import 'package:folio/shared/widgets/lien_dialog.dart';
 
 class AddMangaPage extends ConsumerStatefulWidget {
@@ -247,10 +248,12 @@ class _AddMangaPageState extends ConsumerState<AddMangaPage> {
                   minimumSize: const Size(double.infinity, 50),
                   shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                 ),
-                onPressed: () {
+                onPressed: () async {
                   if (_formKey.currentState!.validate()) {
+                    final nav = Navigator.of(context);
                     final dao = ref.read(mangaDaoProvider);
-                    dao.insertManga(
+                    final engine = ref.read(syncEngineProvider);
+                    final id = await dao.insertManga(
                       MangaTableCompanion(
                         id: Value.absent(),
                         titre: Value(_titreController.text),
@@ -265,7 +268,8 @@ class _AddMangaPageState extends ConsumerState<AddMangaPage> {
                         liens: Value(liensToJson(_liens)),
                       ),
                     );
-                    Navigator.pop(context);
+                    engine.syncManga(id);
+                    nav.pop();
                   }
                 },
                 icon: const Icon(Icons.check),
