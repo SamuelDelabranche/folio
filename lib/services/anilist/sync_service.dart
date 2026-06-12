@@ -83,6 +83,9 @@ class SyncService {
       if (coverUrl != null && urlCoverAutorisee(coverUrl)) {
         final chemin = await _telechargerCover(coverUrl, manga.anilistId!);
         if (chemin != null) {
+          if (manga.imagePath != null && manga.imagePath != chemin) {
+            await CoverService.supprimerCover(manga.imagePath);
+          }
           companion = companion.copyWith(
             imagePath: Value(chemin),
             imageSource: const Value('anilist'),

@@ -70,7 +70,7 @@ class _AddMangaPageState extends ConsumerState<AddMangaPage> {
               const SizedBox(height: 16),
 
               TextFormField(
-                keyboardType: TextInputType.number,
+                keyboardType: const TextInputType.numberWithOptions(decimal: true),
                 controller: _chapitreController,
                 decoration: _inputDecoration('Chapitres lus', icon: Icons.menu_book_outlined),
                 validator: (value) {

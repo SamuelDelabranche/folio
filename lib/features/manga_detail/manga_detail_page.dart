@@ -91,17 +91,23 @@ class _MangaDetailPage extends ConsumerState<MangaDetailPage> {
   }
 
   Future<void> _sauvegarder() async {
-    final mangaMisAJour = widget.mangaData.copyWith(
-      titre: _titreController.text,
-      description: Value(_descriptionController.text),
-      chapitres: double.tryParse(_chapitresController.text) ?? widget.mangaData.chapitres,
-      note: _noteEdition,
-      status: _statutController,
-      typeManga: _typeController,
-      genre: Value(_genreSelectionne.join(',')),
-      liens: Value(liensToJson(_liens)),
+    final chapitres =
+        double.tryParse(_chapitresController.text.replaceAll(',', '.'));
+    await _dao.updateMangaByElement(
+      widget.mangaData.id,
+      MangaTableCompanion(
+        titre: Value(_titreController.text),
+        description: Value(_descriptionController.text),
+        chapitres: chapitres != null && chapitres >= 0
+            ? Value(chapitres)
+            : const Value.absent(),
+        note: Value(_noteEdition),
+        status: Value(_statutController),
+        typeManga: Value(_typeController),
+        genre: Value(_genreSelectionne.join(',')),
+        liens: Value(liensToJson(_liens)),
+      ),
     );
-    await _dao.updateManga(mangaMisAJour);
   }
 
   void _copierLien(String url) {
@@ -257,6 +263,9 @@ class _MangaDetailPage extends ConsumerState<MangaDetailPage> {
         octets,
         'cover_${widget.mangaData.id}.jpg',
       );
+      if (_imagePath != null && _imagePath != chemin) {
+        await CoverService.supprimerCover(_imagePath);
+      }
 
       await _dao.updateMangaByElement(
         widget.mangaData.id,
@@ -592,7 +601,7 @@ class _MangaDetailPage extends ConsumerState<MangaDetailPage> {
                               ),
                               const SizedBox(height: 16),
                               TextFormField(
-                                keyboardType: TextInputType.number,
+                                keyboardType: const TextInputType.numberWithOptions(decimal: true),
                                 controller: _chapitresController,
                                 decoration: InputDecoration(
                                   labelText: 'Chapitres lus',

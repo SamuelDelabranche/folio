@@ -89,29 +89,4 @@ class SyncEngine {
 
   Future<void> lierTout() => _passe((m) => m.anilistId == null);
 
-  Future<void> syncManga(int id) async {
-    if (_enCours) return;
-    if (!_ref.read(syncPrefsProvider).maitre) return;
-    _enCours = true;
-    _arretDemande = false;
-    _ref.read(syncEnCoursProvider.notifier).set(true);
-    try {
-      final dao = _ref.read(mangaDaoProvider);
-      final service = _ref.read(syncServiceProvider);
-      var manga = await dao.getManga(id);
-      if (manga == null) return;
-      if (manga.anilistId == null) {
-        if (!await service.lierAuto(manga)) return;
-        await _attendre(intervalleRequetes);
-        if (!_doitContinuer) return;
-        manga = await dao.getManga(id);
-        if (manga == null || manga.anilistId == null) return;
-      }
-      await service.syncOne(manga);
-    } catch (_) {
-    } finally {
-      _enCours = false;
-      _ref.read(syncEnCoursProvider.notifier).set(false);
-    }
-  }
 }

@@ -22,7 +22,7 @@ class LibraryPage extends ConsumerStatefulWidget {
 
 class _LibraryPage extends ConsumerState<LibraryPage> {
   bool _modeSelection = false;
-  final List<MangaTableData> _mangaSelectionne = [];
+  final Set<int> _idsSelectionnes = {};
   final _rechercheController = TextEditingController();
   String _recherche = '';
   String? _filtreStatus;
@@ -293,7 +293,7 @@ class _LibraryPage extends ConsumerState<LibraryPage> {
             TextButton.icon(
               onPressed: () {
                 setState(() {
-                  _mangaSelectionne.clear();
+                  _idsSelectionnes.clear();
                   _modeSelection = false;
                 });
               },
@@ -367,7 +367,7 @@ class _LibraryPage extends ConsumerState<LibraryPage> {
                       Icon(Icons.check_circle, size: 16, color: AppColors.danger),
                       const SizedBox(width: 8),
                       Text(
-                        '${_mangaSelectionne.length} sélectionné(s)',
+                        '${_idsSelectionnes.length} sélectionné(s)',
                         style: TextStyle(color: AppColors.danger, fontWeight: FontWeight.bold),
                       ),
                     ],
@@ -401,12 +401,13 @@ class _LibraryPage extends ConsumerState<LibraryPage> {
                     style: TextButton.styleFrom(foregroundColor: AppColors.danger),
                     onPressed: () async {
                       final dao = ref.read(mangaDaoProvider);
-                      for (final m in _mangaSelectionne) {
-                        await CoverService.supprimerCover(m.imagePath);
+                      for (final id in _idsSelectionnes) {
+                        final m = await dao.getManga(id);
+                        if (m != null) await CoverService.supprimerCover(m.imagePath);
                       }
-                      await dao.deleteMangas(_mangaSelectionne.map((m) => m.id).toList());
+                      await dao.deleteMangas(_idsSelectionnes.toList());
                       setState(() {
-                        _mangaSelectionne.clear();
+                        _idsSelectionnes.clear();
                         _modeSelection = false;
                       });
                       messenger.showSnackBar(
@@ -545,13 +546,13 @@ class _LibraryPage extends ConsumerState<LibraryPage> {
   }
 
   Widget _wrapItem(MangaTableData manga, Widget child) {
-    final isSelected = _mangaSelectionne.contains(manga);
+    final isSelected = _idsSelectionnes.contains(manga.id);
     return InkWell(
       borderRadius: BorderRadius.circular(12),
       onLongPress: () {
         setState(() {
           _modeSelection = true;
-          _mangaSelectionne.add(manga);
+          _idsSelectionnes.add(manga.id);
         });
       },
       onTap: () {
@@ -563,10 +564,10 @@ class _LibraryPage extends ConsumerState<LibraryPage> {
         } else {
           setState(() {
             if (isSelected) {
-              _mangaSelectionne.remove(manga);
-              if (_mangaSelectionne.isEmpty) _modeSelection = false;
+              _idsSelectionnes.remove(manga.id);
+              if (_idsSelectionnes.isEmpty) _modeSelection = false;
             } else {
-              _mangaSelectionne.add(manga);
+              _idsSelectionnes.add(manga.id);
             }
           });
         }
