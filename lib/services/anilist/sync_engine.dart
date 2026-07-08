@@ -1,0 +1,92 @@
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+
+import 'package:folio/app/providers.dart';
+import 'package:folio/data/database/app_database.dart';
+import 'package:folio/services/anilist/anilist_client.dart';
+import 'package:folio/services/anilist/sync_service.dart';
+
+final syncEnCoursProvider =
+    NotifierProvider<SyncEnCoursNotifier, bool>(SyncEnCoursNotifier.new);
+
+class SyncEnCoursNotifier extends Notifier<bool> {
+  @override
+  bool build() => false;
+
+  void set(bool valeur) => state = valeur;
+}
+
+final syncEngineProvider = Provider<SyncEngine>((ref) => SyncEngine(ref));
+
+class SyncEngine {
+  static const intervalleRequetes = Duration(milliseconds: 2500);
+
+  final Ref _ref;
+  bool _enCours = false;
+  bool _arretDemande = false;
+
+  SyncEngine(this._ref);
+
+  void annuler() => _arretDemande = true;
+
+  bool get _doitContinuer =>
+      !_arretDemande && _ref.read(syncPrefsProvider).maitre;
+
+  Future<void> _attendre(Duration duree) async {
+    final fin = DateTime.now().add(duree);
+    while (DateTime.now().isBefore(fin)) {
+      if (!_doitContinuer) return;
+      await Future.delayed(const Duration(milliseconds: 250));
+    }
+  }
+
+  Future<void> _passe(bool Function(MangaTableData manga) filtre) async {
+    if (_enCours) return;
+    if (!_ref.read(syncPrefsProvider).maitre) return;
+    _enCours = true;
+    _arretDemande = false;
+    _ref.read(syncEnCoursProvider.notifier).set(true);
+    try {
+      final dao = _ref.read(mangaDaoProvider);
+      final service = _ref.read(syncServiceProvider);
+      final tous = await dao.getAllMangas();
+      final candidats = tous.where(filtre).toList()
+        ..sort((a, b) {
+          if (a.lastSyncedAt == null && b.lastSyncedAt == null) return 0;
+          if (a.lastSyncedAt == null) return -1;
+          if (b.lastSyncedAt == null) return 1;
+          return a.lastSyncedAt!.compareTo(b.lastSyncedAt!);
+        });
+
+      for (final manga in candidats) {
+        if (!_doitContinuer) break;
+        try {
+          var courant = manga;
+          if (courant.anilistId == null) {
+            if (!await service.lierAuto(courant)) continue;
+            await _attendre(intervalleRequetes);
+            if (!_doitContinuer) break;
+            final relu = await dao.getManga(courant.id);
+            if (relu == null || relu.anilistId == null) continue;
+            courant = relu;
+          }
+          await service.syncOne(courant);
+        } on AnilistRateLimitException catch (e) {
+          await _attendre(e.retryAfter);
+        } on AnilistNetworkException {
+          break;
+        } catch (_) {
+          break;
+        }
+        await _attendre(intervalleRequetes);
+      }
+    } finally {
+      _enCours = false;
+      _ref.read(syncEnCoursProvider.notifier).set(false);
+    }
+  }
+
+  Future<void> toutSynchroniser() => _passe((_) => true);
+
+  Future<void> lierTout() => _passe((m) => m.anilistId == null);
+
+}

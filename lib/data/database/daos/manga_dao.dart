@@ -1,0 +1,43 @@
+import 'package:drift/drift.dart';
+import '../app_database.dart';
+import '../tables/manga_table.dart';
+
+part 'manga_dao.g.dart';
+
+@DriftAccessor(tables: [MangaTable])
+class MangaDao extends DatabaseAccessor<AppDatabase> with _$MangaDaoMixin {
+  MangaDao(super.db);
+
+  Future<List<MangaTableData>> getAllMangas() => select(mangaTable).get();
+
+  Stream<List<MangaTableData>> watchAllMangas() => select(mangaTable).watch();
+
+  Future<MangaTableData?> getManga(int id) =>
+      (select(mangaTable)..where((m) => m.id.equals(id))).getSingleOrNull();
+
+  Future<int> insertManga(MangaTableCompanion manga) =>
+      into(mangaTable).insert(manga);
+
+  Future<void> updateMangaByElement(int id, MangaTableCompanion companion) {
+    return (update(mangaTable)..where((m) => m.id.equals(id))).write(companion);
+  }
+
+  Future<void> deleteManga(int id) {
+    return (delete(mangaTable)..where((m) => m.id.equals(id))).go();
+  }
+
+  Future<void> deleteMangas(List<int> ids) {
+    return (delete(mangaTable)..where((m) => m.id.isIn(ids))).go();
+  }
+
+  Future<void> deleteAllMangas() {
+    return delete(mangaTable).go();
+  }
+
+  Future<void> replaceAllMangas(List<MangaTableCompanion> mangas) {
+    return db.transaction(() async {
+      await delete(mangaTable).go();
+      await db.batch((b) => b.insertAll(mangaTable, mangas));
+    });
+  }
+}

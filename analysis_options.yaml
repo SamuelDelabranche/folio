@@ -1,0 +1,14 @@
+include: package:flutter_lints/flutter.yaml
+
+analyzer:
+  exclude:
+    - lib/generated/**
+    - "**/*.g.dart"
+
+linter:
+  rules:
+    - prefer_final_locals
+    - unawaited_futures
+    - avoid_redundant_argument_values
+    - prefer_single_quotes
+    - directives_ordering

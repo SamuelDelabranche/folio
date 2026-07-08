@@ -1,0 +1,4 @@
+storeFile=../folio-key.jks
+storePassword=VOTRE_MOT_DE_PASSE_STORE
+keyAlias=folio
+keyPassword=VOTRE_MOT_DE_PASSE_CLE
