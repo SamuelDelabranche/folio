@@ -1,25 +1,23 @@
-import 'dart:convert';
+import 'dart:async';
 import 'dart:io';
 
 import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
-import 'package:folio/generated/app_localizations.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:folio/app/constants.dart';
 import 'package:folio/app/providers.dart';
 import 'package:folio/app/theme.dart';
-import 'package:folio/data/database/app_database.dart';
 import 'package:folio/data/database/daos/manga_dao.dart';
-import 'package:folio/data/models/lien.dart';
 import 'package:folio/features/onboarding/onboarding_page.dart';
+import 'package:folio/generated/app_localizations.dart';
 import 'package:folio/services/anilist/sync_engine.dart';
 import 'package:folio/services/cover_service.dart';
+import 'package:folio/services/transfer_service.dart';
 import 'package:folio/services/update_service.dart';
-import 'package:url_launcher/url_launcher.dart';
 import 'package:package_info_plus/package_info_plus.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:share_plus/share_plus.dart';
-import 'package:drift/drift.dart' hide Column;
+import 'package:url_launcher/url_launcher.dart';
 
 class SettingsPage extends ConsumerStatefulWidget {
   const SettingsPage({super.key});
@@ -56,37 +54,15 @@ class _SettingsPage extends ConsumerState<SettingsPage> {
         return;
       }
 
-      final prepJson = mangas.map((manga) => {
-        'titre': manga.titre,
-        'description': manga.description,
-        'imagePath': manga.imagePath,
-        'status': manga.status,
-        'genre': manga.genre,
-        'typeManga': manga.typeManga,
-        'estFavori': manga.estFavori,
-        'note': manga.note,
-        'chapitres': manga.chapitres,
-        'liens': manga.liens,
-        'anilistId': manga.anilistId,
-        'lastSyncedAt': manga.lastSyncedAt?.toIso8601String(),
-        'syncImage': manga.syncImage,
-        'syncDescription': manga.syncDescription,
-        'syncGenres': manga.syncGenres,
-        'syncType': manga.syncType,
-        'imageSource': manga.imageSource,
-      }).toList();
-
-      final customGenres = ref.read(customGenresProvider);
-      final customTypes = ref.read(customTypesProvider);
-      final export = <String, dynamic>{
-        'mangas': prepJson,
-        if (customGenres.isNotEmpty) 'custom_genres': customGenres,
-        if (customTypes.isNotEmpty) 'custom_types': customTypes,
-      };
+      final json = exporterEnJson(
+        mangas,
+        ref.read(customGenresProvider),
+        ref.read(customTypesProvider),
+      );
 
       final dossier = await getTemporaryDirectory();
       final fichier = File('${dossier.path}/folio_export.json');
-      await fichier.writeAsString(jsonEncode(export));
+      await fichier.writeAsString(json);
       await SharePlus.instance.share(ShareParams(files: [XFile(fichier.path)]));
     } catch (e) {
       messenger.showSnackBar(SnackBar(
@@ -318,7 +294,7 @@ class _SettingsPage extends ConsumerState<SettingsPage> {
   Future<void> _revoirIntro() async {
     await resetOnboarding();
     if (!mounted) return;
-    Navigator.push(context, MaterialPageRoute(builder: (_) => const OnboardingPage()));
+    unawaited(Navigator.push(context, MaterialPageRoute(builder: (_) => const OnboardingPage())));
   }
 
   Future<void> _verifierMaj() async {
@@ -406,7 +382,7 @@ class _SettingsPage extends ConsumerState<SettingsPage> {
     }
     final secondes = (nonLies * 5).ceil();
     final estimation = secondes < 60 ? '$secondes s' : '${(secondes / 60).ceil()} min';
-    showDialog(
+    unawaited(showDialog(
       context: context,
       builder: (dialogContext) => AlertDialog(
         icon: const Icon(Icons.add_link, size: 44),
@@ -429,7 +405,7 @@ class _SettingsPage extends ConsumerState<SettingsPage> {
           ),
         ],
       ),
-    );
+    ));
   }
 
   Future<void> _toutSynchroniser() async {
@@ -447,7 +423,7 @@ class _SettingsPage extends ConsumerState<SettingsPage> {
     }
     final secondes = (total * 5).ceil();
     final estimation = secondes < 60 ? '$secondes s' : '${(secondes / 60).ceil()} min';
-    showDialog(
+    unawaited(showDialog(
       context: context,
       builder: (dialogContext) => AlertDialog(
         icon: const Icon(Icons.sync, size: 44),
@@ -470,60 +446,7 @@ class _SettingsPage extends ConsumerState<SettingsPage> {
           ),
         ],
       ),
-    );
-  }
-
-  MangaTableCompanion _companionDepuisJson(dynamic item) {
-    if (item is! Map<String, dynamic>) {
-      throw const FormatException('Item invalide');
-    }
-    final titre = item['titre'];
-    if (titre is! String || titre.trim().isEmpty) {
-      throw const FormatException('Titre manquant');
-    }
-    final note = ((item['note'] as num?)?.toDouble() ?? 0).clamp(0.0, 10.0);
-    final chapitres = ((item['chapitres'] as num?)?.toDouble() ?? 0).clamp(0.0, double.maxFinite);
-
-    String? liensJson = item['liens'] as String?;
-    if (liensJson != null && liensJson.isNotEmpty) {
-      final liens = liensFromJson(liensJson).where((l) => urlEstValide(l.url)).toList();
-      liensJson = liensToJson(liens);
-    }
-
-    final anilistId = (item['anilistId'] as num?)?.toInt();
-    final lastSyncedAt = item['lastSyncedAt'] is String
-        ? DateTime.tryParse(item['lastSyncedAt'] as String)
-        : null;
-
-    String? imagePath = item['imagePath'] as String?;
-    if (imagePath != null && !File(imagePath).existsSync()) {
-      imagePath = null;
-    }
-    var imageSource = item['imageSource'] as String?;
-    if (!const ['aucune', 'utilisateur', 'anilist'].contains(imageSource)) {
-      imageSource = imagePath != null ? 'utilisateur' : 'aucune';
-    }
-    if (imagePath == null) imageSource = 'aucune';
-
-    return MangaTableCompanion(
-      titre: Value(titre.trim()),
-      description: Value(item['description'] as String?),
-      imagePath: Value(imagePath),
-      status: Value(item['status'] as String? ?? 'À lire'),
-      genre: Value(item['genre'] as String?),
-      typeManga: Value(item['typeManga'] as String? ?? 'Manga'),
-      estFavori: Value(item['estFavori'] as bool? ?? false),
-      note: Value(note),
-      chapitres: Value(chapitres),
-      liens: Value(liensJson),
-      anilistId: Value(anilistId),
-      lastSyncedAt: Value(lastSyncedAt),
-      syncImage: Value(item['syncImage'] as bool? ?? true),
-      syncDescription: Value(item['syncDescription'] as bool? ?? true),
-      syncGenres: Value(item['syncGenres'] as bool? ?? true),
-      syncType: Value(item['syncType'] as bool? ?? true),
-      imageSource: Value(imageSource!),
-    );
+    ));
   }
 
   void _importer() {
@@ -556,7 +479,7 @@ class _SettingsPage extends ConsumerState<SettingsPage> {
               final messenger = ScaffoldMessenger.of(context);
               Navigator.pop(dialogContext);
               try {
-                final result = await FilePicker.platform.pickFiles(
+                final result = await FilePicker.pickFiles(
                   type: FileType.custom,
                   allowedExtensions: ['json'],
                 );
@@ -567,37 +490,20 @@ class _SettingsPage extends ConsumerState<SettingsPage> {
                   throw const FormatException('Fichier trop volumineux');
                 }
                 final contenu = await fichier.readAsString();
-                final dynamic decoded = jsonDecode(contenu);
+                final import = importerDepuisJson(contenu);
 
-                final List<dynamic> listeJson;
-                final List<String> importedGenres;
-                final List<String> importedTypes;
+                await _dao.replaceAllMangas(import.mangas);
 
-                if (decoded is List) {
-                  listeJson = decoded;
-                  importedGenres = [];
-                  importedTypes = [];
-                } else if (decoded is Map<String, dynamic>) {
-                  listeJson = decoded['mangas'] as List<dynamic>? ?? [];
-                  importedGenres = List<String>.from(decoded['custom_genres'] as List? ?? []);
-                  importedTypes = List<String>.from(decoded['custom_types'] as List? ?? []);
-                } else {
-                  throw const FormatException('Format invalide');
-                }
-
-                final companions = listeJson.map((item) => _companionDepuisJson(item)).toList();
-                await _dao.replaceAllMangas(companions);
-
-                for (final g in importedGenres) {
+                for (final g in import.customGenres) {
                   await ref.read(customGenresProvider.notifier).add(g);
                 }
-                for (final t in importedTypes) {
+                for (final t in import.customTypes) {
                   await ref.read(customTypesProvider.notifier).add(t);
                 }
 
                 messenger.showSnackBar(SnackBar(
                   backgroundColor: AppColors.success,
-                  content: Text(l10n.settingsImportSuccess(companions.length), textAlign: TextAlign.center, style: const TextStyle(color: Colors.black87)),
+                  content: Text(l10n.settingsImportSuccess(import.mangas.length), textAlign: TextAlign.center, style: const TextStyle(color: Colors.black87)),
                 ));
               } catch (e) {
                 messenger.showSnackBar(SnackBar(

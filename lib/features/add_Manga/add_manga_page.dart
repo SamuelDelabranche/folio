@@ -1,12 +1,12 @@
-import 'package:flutter/material.dart';
-import 'package:folio/generated/app_localizations.dart';
-import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:folio/app/providers.dart';
-import 'package:folio/data/database/app_database.dart';
 import 'package:drift/drift.dart' hide Column;
+import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:folio/app/constants.dart';
-import 'package:folio/data/models/lien.dart';
+import 'package:folio/app/providers.dart';
 import 'package:folio/app/theme.dart';
+import 'package:folio/data/database/app_database.dart';
+import 'package:folio/data/models/lien.dart';
+import 'package:folio/generated/app_localizations.dart';
 import 'package:folio/shared/widgets/lien_dialog.dart';
 
 class AddMangaPage extends ConsumerStatefulWidget {
@@ -44,29 +44,29 @@ class _AddMangaPageState extends ConsumerState<AddMangaPage> {
 
   Future<void> _dialogAjouterTag(String titre, Future<void> Function(String) onAdd) async {
     final l10n = AppLocalizations.of(context)!;
-    final ctrl = TextEditingController();
-    await showDialog(
+    var saisie = '';
+    final valide = await showDialog<bool>(
       context: context,
       builder: (ctx) => AlertDialog(
         title: Text(titre),
         content: TextField(
-          controller: ctrl,
           textCapitalization: TextCapitalization.sentences,
           autofocus: true,
+          maxLength: 24,
           decoration: InputDecoration(
             border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
           ),
-          onSubmitted: (_) => Navigator.pop(ctx),
+          onChanged: (v) => saisie = v,
+          onSubmitted: (_) => Navigator.pop(ctx, true),
         ),
         actions: [
-          TextButton(onPressed: () => Navigator.pop(ctx), child: Text(l10n.commonCancel)),
-          FilledButton(onPressed: () => Navigator.pop(ctx), child: Text(l10n.commonAdd)),
+          TextButton(onPressed: () => Navigator.pop(ctx, false), child: Text(l10n.commonCancel)),
+          FilledButton(onPressed: () => Navigator.pop(ctx, true), child: Text(l10n.commonAdd)),
         ],
       ),
     );
-    final val = ctrl.text.trim();
-    ctrl.dispose();
-    if (val.isNotEmpty) await onAdd(val);
+    final val = saisie.trim();
+    if (valide == true && val.isNotEmpty) await onAdd(val);
   }
 
   Future<void> _supprimerType(String type) async {
@@ -163,7 +163,6 @@ class _AddMangaPageState extends ConsumerState<AddMangaPage> {
               ),
               Slider(
                 value: _note,
-                min: 0,
                 max: 10,
                 divisions: 20,
                 onChanged: (value) => setState(() => _note = value),
@@ -178,14 +177,18 @@ class _AddMangaPageState extends ConsumerState<AddMangaPage> {
                 children: [
                   ...['Manga', 'Manhwa', 'Manhua', 'Novel', ...ref.watch(customTypesProvider)].map((type) {
                     final isCustom = ref.read(customTypesProvider).contains(type);
-                    return GestureDetector(
-                      onLongPress: isCustom ? () => _supprimerType(type) : null,
-                      child: ChoiceChip(
-                        label: Text(type),
-                        selected: _typeSelectionne == type,
-                        onSelected: (_) => setState(() => _typeSelectionne = type),
-                      ),
-                    );
+                    return isCustom
+                        ? InputChip(
+                            label: Text(type),
+                            selected: _typeSelectionne == type,
+                            onSelected: (_) => setState(() => _typeSelectionne = type),
+                            onDeleted: () => _supprimerType(type),
+                          )
+                        : ChoiceChip(
+                            label: Text(type),
+                            selected: _typeSelectionne == type,
+                            onSelected: (_) => setState(() => _typeSelectionne = type),
+                          );
                   }),
                   ActionChip(
                     avatar: const Icon(Icons.add, size: 16),
@@ -245,7 +248,10 @@ class _AddMangaPageState extends ConsumerState<AddMangaPage> {
                           label: Text(genreLabel(genre, l10n)),
                           selected: _genreSelectionne.contains(genre),
                           onDeleted: isCustom
-                              ? () => ref.read(customGenresProvider.notifier).remove(genre)
+                              ? () {
+                                  ref.read(customGenresProvider.notifier).remove(genre);
+                                  setState(() => _genreSelectionne.remove(genre));
+                                }
                               : null,
                           onSelected: (selected) {
                             setState(() {

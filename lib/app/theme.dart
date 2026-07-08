@@ -74,7 +74,6 @@ class AppTheme {
         scaffoldBackgroundColor: AppColors.surfaceLight,
         colorScheme: ColorScheme.fromSeed(
           seedColor: AppColors.primary,
-          brightness: Brightness.light,
         ).copyWith(
           primary: AppColors.primary,
           secondary: AppColors.accent,

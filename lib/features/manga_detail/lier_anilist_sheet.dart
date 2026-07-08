@@ -1,8 +1,8 @@
 import 'dart:async';
 
 import 'package:flutter/material.dart';
-import 'package:folio/generated/app_localizations.dart';
 import 'package:folio/app/theme.dart';
+import 'package:folio/generated/app_localizations.dart';
 import 'package:folio/services/anilist/anilist_client.dart';
 import 'package:folio/services/anilist/anilist_models.dart';
 import 'package:folio/services/anilist/sync_service.dart';

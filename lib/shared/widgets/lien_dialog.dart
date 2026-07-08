@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
-import 'package:folio/generated/app_localizations.dart';
 import 'package:folio/data/models/lien.dart';
+import 'package:folio/generated/app_localizations.dart';
 
 Future<Lien?> showAjouterLienDialog(BuildContext context) {
   final l10n = AppLocalizations.of(context)!;

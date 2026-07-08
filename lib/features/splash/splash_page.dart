@@ -113,13 +113,13 @@ class _SplashPageState extends State<SplashPage> with TickerProviderStateMixin {
     if (!mounted) return;
     final firstLaunch = await isFirstLaunch();
     if (!mounted) return;
-    Navigator.of(context).pushReplacement(PageRouteBuilder(
+    unawaited(Navigator.of(context).pushReplacement(PageRouteBuilder(
       pageBuilder: (_, _, _) =>
           firstLaunch ? const OnboardingPage() : const HomePage(),
       transitionDuration: const Duration(milliseconds: 450),
       transitionsBuilder: (_, anim, _, child) =>
           FadeTransition(opacity: anim, child: child),
-    ));
+    )));
   }
 
   @override

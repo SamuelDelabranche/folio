@@ -1,12 +1,14 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
-import 'package:folio/generated/app_localizations.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:folio/app/providers.dart';
 import 'package:folio/app/theme.dart';
+import 'package:folio/app/transitions.dart';
 import 'package:folio/data/database/app_database.dart';
 import 'package:folio/features/add_Manga/add_manga_page.dart';
 import 'package:folio/features/manga_detail/manga_detail_page.dart';
-import 'package:folio/app/transitions.dart';
+import 'package:folio/generated/app_localizations.dart';
 import 'package:folio/services/anilist/sync_engine.dart';
 import 'package:folio/services/cover_service.dart';
 import 'package:folio/shared/widgets/manga_card.dart';
@@ -177,7 +179,7 @@ class _LibraryPage extends ConsumerState<LibraryPage> {
                           child: Wrap(
                             spacing: 8,
                             runSpacing: 4,
-                            children: ['Manga', 'Manhwa', 'Manhua', 'Novel'].map((t) {
+                            children: ['Manga', 'Manhwa', 'Manhua', 'Novel', ...ref.read(customTypesProvider)].map((t) {
                               return FilterChip(
                                 label: Text(t),
                                 selected: _filtreType == t,
@@ -221,7 +223,6 @@ class _LibraryPage extends ConsumerState<LibraryPage> {
                               ),
                               RangeSlider(
                                 values: _filtreNote,
-                                min: 0,
                                 max: 10,
                                 divisions: 10,
                                 labels: RangeLabels(
@@ -251,7 +252,6 @@ class _LibraryPage extends ConsumerState<LibraryPage> {
                               ),
                               RangeSlider(
                                 values: _filtreChapitres,
-                                min: 0,
                                 max: 1000,
                                 divisions: 100,
                                 labels: RangeLabels(
@@ -392,7 +392,7 @@ class _LibraryPage extends ConsumerState<LibraryPage> {
           if (_modeSelection) {
             final nav = Navigator.of(context);
             final messenger = ScaffoldMessenger.of(context);
-            showDialog(
+            unawaited(showDialog(
               context: context,
               builder: (dialogContext) => AlertDialog(
                 icon: Icon(Icons.warning_amber_rounded, color: AppColors.danger, size: 48),
@@ -432,9 +432,9 @@ class _LibraryPage extends ConsumerState<LibraryPage> {
                   ),
                 ],
               ),
-            );
+            ));
           } else {
-            Navigator.push(context, fadeScaleRoute(AddMangaPage()));
+            unawaited(Navigator.push(context, fadeScaleRoute(AddMangaPage())));
           }
         },
         child: Icon(_modeSelection ? Icons.delete : Icons.add),

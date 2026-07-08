@@ -1,7 +1,8 @@
 import 'package:drift/drift.dart';
 import 'package:drift_flutter/drift_flutter.dart';
-import 'tables/manga_table.dart';
+
 import 'daos/manga_dao.dart';
+import 'tables/manga_table.dart';
 
 part 'app_database.g.dart';
 

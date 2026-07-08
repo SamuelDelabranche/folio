@@ -3,13 +3,12 @@ import 'dart:io';
 import 'package:drift/drift.dart';
 import 'package:flutter/painting.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:http/http.dart' as http;
-
 import 'package:folio/app/providers.dart';
 import 'package:folio/data/database/app_database.dart';
-import 'package:folio/services/cover_service.dart';
 import 'package:folio/services/anilist/anilist_client.dart';
 import 'package:folio/services/anilist/anilist_models.dart';
+import 'package:folio/services/cover_service.dart';
+import 'package:http/http.dart' as http;
 
 bool urlCoverAutorisee(String url) {
   final uri = Uri.tryParse(url);

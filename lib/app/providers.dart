@@ -148,7 +148,9 @@ class LocaleNotifier extends Notifier<Locale> {
   }
 }
 
-// Tags personnalisés (genres / types) — stockés dans SharedPreferences
+String nettoyerTag(String tag) =>
+    tag.replaceAll(',', ' ').replaceAll(RegExp(r'\s+'), ' ').trim();
+
 abstract class _CustomTagsNotifier extends Notifier<List<String>> {
   String get _prefKey;
 
@@ -161,7 +163,7 @@ abstract class _CustomTagsNotifier extends Notifier<List<String>> {
   }
 
   Future<void> add(String tag) async {
-    final t = tag.trim();
+    final t = nettoyerTag(tag);
     if (t.isEmpty || state.contains(t)) return;
     state = [...state, t];
     final prefs = await SharedPreferences.getInstance();

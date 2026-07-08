@@ -1,10 +1,10 @@
 import 'dart:io';
 
 import 'package:flutter/material.dart';
-import 'package:folio/generated/app_localizations.dart';
 import 'package:folio/app/constants.dart';
 import 'package:folio/app/theme.dart';
 import 'package:folio/data/database/app_database.dart';
+import 'package:folio/generated/app_localizations.dart';
 
 class MangaCard extends StatelessWidget {
   final MangaTableData mangaData;
@@ -69,7 +69,7 @@ class MangaCard extends StatelessWidget {
                       borderRadius: BorderRadius.circular(8),
                     ),
                     child: Text(
-                      "${mangaData.note}",
+                      '${mangaData.note}',
                       style: const TextStyle(
                         color: Colors.white,
                         fontSize: 11,
@@ -105,7 +105,7 @@ class MangaCard extends StatelessWidget {
                     const SizedBox(width: 4),
                     Expanded(
                       child: Text(
-                        "${mangaData.chapitres.toInt()} ch.",
+                        '${mangaData.chapitres.toInt()} ch.',
                         style: const TextStyle(fontSize: 12),
                         overflow: TextOverflow.ellipsis,
                       ),

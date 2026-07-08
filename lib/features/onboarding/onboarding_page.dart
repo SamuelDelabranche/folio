@@ -1,9 +1,11 @@
+import 'dart:async';
 import 'dart:io';
+
 import 'package:flutter/material.dart';
-import 'package:folio/generated/app_localizations.dart';
-import 'package:path_provider/path_provider.dart';
 import 'package:folio/app/theme.dart';
 import 'package:folio/features/home/home_page.dart';
+import 'package:folio/generated/app_localizations.dart';
+import 'package:path_provider/path_provider.dart';
 
 class _Slide {
   final String tag;
@@ -70,12 +72,12 @@ class _OnboardingPageState extends State<OnboardingPage> {
   void _finish() async {
     await markOnboardingDone();
     if (!mounted) return;
-    Navigator.of(context).pushReplacement(PageRouteBuilder(
+    unawaited(Navigator.of(context).pushReplacement(PageRouteBuilder(
       pageBuilder: (_, _, _) => const HomePage(),
       transitionDuration: const Duration(milliseconds: 500),
       transitionsBuilder: (_, anim, _, child) =>
           FadeTransition(opacity: anim, child: child),
-    ));
+    )));
   }
 
   @override

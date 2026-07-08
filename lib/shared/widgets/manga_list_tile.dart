@@ -1,10 +1,10 @@
 import 'dart:io';
 
 import 'package:flutter/material.dart';
-import 'package:folio/generated/app_localizations.dart';
 import 'package:folio/app/constants.dart';
 import 'package:folio/app/theme.dart';
 import 'package:folio/data/database/app_database.dart';
+import 'package:folio/generated/app_localizations.dart';
 
 class MangaListTile extends StatelessWidget {
   final MangaTableData mangaData;

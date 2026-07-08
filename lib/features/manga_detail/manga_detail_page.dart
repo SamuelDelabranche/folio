@@ -1,8 +1,9 @@
+import 'dart:async';
 import 'dart:io';
+
 import 'package:drift/drift.dart' hide Column;
-import 'package:flutter/services.dart';
 import 'package:flutter/material.dart';
-import 'package:folio/generated/app_localizations.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:folio/app/constants.dart';
 import 'package:folio/app/providers.dart';
@@ -11,6 +12,7 @@ import 'package:folio/data/database/app_database.dart';
 import 'package:folio/data/database/daos/manga_dao.dart';
 import 'package:folio/data/models/lien.dart';
 import 'package:folio/features/manga_detail/lier_anilist_sheet.dart';
+import 'package:folio/generated/app_localizations.dart';
 import 'package:folio/services/anilist/anilist_client.dart';
 import 'package:folio/services/anilist/sync_service.dart';
 import 'package:folio/services/cover_service.dart';
@@ -129,29 +131,29 @@ class _MangaDetailPage extends ConsumerState<MangaDetailPage> {
 
   Future<void> _dialogAjouterTag(String titre, Future<void> Function(String) onAdd) async {
     final l10n = AppLocalizations.of(context)!;
-    final ctrl = TextEditingController();
-    await showDialog(
+    var saisie = '';
+    final valide = await showDialog<bool>(
       context: context,
       builder: (ctx) => AlertDialog(
         title: Text(titre),
         content: TextField(
-          controller: ctrl,
           textCapitalization: TextCapitalization.sentences,
           autofocus: true,
+          maxLength: 24,
           decoration: InputDecoration(
             border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
           ),
-          onSubmitted: (_) => Navigator.pop(ctx),
+          onChanged: (v) => saisie = v,
+          onSubmitted: (_) => Navigator.pop(ctx, true),
         ),
         actions: [
-          TextButton(onPressed: () => Navigator.pop(ctx), child: Text(l10n.commonCancel)),
-          FilledButton(onPressed: () => Navigator.pop(ctx), child: Text(l10n.commonAdd)),
+          TextButton(onPressed: () => Navigator.pop(ctx, false), child: Text(l10n.commonCancel)),
+          FilledButton(onPressed: () => Navigator.pop(ctx, true), child: Text(l10n.commonAdd)),
         ],
       ),
     );
-    final val = ctrl.text.trim();
-    ctrl.dispose();
-    if (val.isNotEmpty) await onAdd(val);
+    final val = saisie.trim();
+    if (valide == true && val.isNotEmpty) await onAdd(val);
   }
 
   Future<void> _supprimerType(String type) async {
@@ -332,7 +334,7 @@ class _MangaDetailPage extends ConsumerState<MangaDetailPage> {
         _imageSource = 'utilisateur';
         _syncImage = false;
       });
-      FileImage(File(chemin)).evict();
+      unawaited(FileImage(File(chemin)).evict());
       messenger.showSnackBar(SnackBar(
         backgroundColor: AppColors.info,
         content: Text(l10n.detailImageCustomInfo, textAlign: TextAlign.center, style: const TextStyle(color: Colors.black87)),
@@ -593,7 +595,10 @@ class _MangaDetailPage extends ConsumerState<MangaDetailPage> {
                                       label: Text(genreLabel(genre, l10n)),
                                       selected: _genreSelectionne.contains(genre),
                                       onDeleted: isCustom
-                                          ? () => ref.read(customGenresProvider.notifier).remove(genre)
+                                          ? () {
+                                              ref.read(customGenresProvider.notifier).remove(genre);
+                                              setState(() => _genreSelectionne.remove(genre));
+                                            }
                                           : null,
                                       onSelected: (selected) {
                                         setState(() {
@@ -643,14 +648,18 @@ class _MangaDetailPage extends ConsumerState<MangaDetailPage> {
                                 children: [
                                   ...['Manga', 'Manhwa', 'Manhua', 'Novel', ...ref.watch(customTypesProvider)].map((type) {
                                     final isCustom = ref.read(customTypesProvider).contains(type);
-                                    return GestureDetector(
-                                      onLongPress: isCustom ? () => _supprimerType(type) : null,
-                                      child: ChoiceChip(
-                                        label: Text(type),
-                                        selected: _typeController == type,
-                                        onSelected: (_) => setState(() => _typeController = type),
-                                      ),
-                                    );
+                                    return isCustom
+                                        ? InputChip(
+                                            label: Text(type),
+                                            selected: _typeController == type,
+                                            onSelected: (_) => setState(() => _typeController = type),
+                                            onDeleted: () => _supprimerType(type),
+                                          )
+                                        : ChoiceChip(
+                                            label: Text(type),
+                                            selected: _typeController == type,
+                                            onSelected: (_) => setState(() => _typeController = type),
+                                          );
                                   }),
                                   ActionChip(
                                     avatar: const Icon(Icons.add, size: 16),
@@ -703,7 +712,6 @@ class _MangaDetailPage extends ConsumerState<MangaDetailPage> {
                               ),
                               Slider(
                                 value: _noteEdition,
-                                min: 0,
                                 max: 10,
                                 divisions: 20,
                                 onChanged: (value) => setState(() => _noteEdition = value),

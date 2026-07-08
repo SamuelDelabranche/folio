@@ -1,9 +1,9 @@
 import 'package:flutter/material.dart';
-import 'package:folio/generated/app_localizations.dart';
-import 'package:folio/app/constants.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:folio/app/constants.dart';
 import 'package:folio/app/providers.dart';
 import 'package:folio/app/theme.dart';
+import 'package:folio/generated/app_localizations.dart';
 
 class StatisticsPage extends ConsumerWidget {
   const StatisticsPage({super.key});
@@ -30,10 +30,20 @@ class StatisticsPage extends ConsumerWidget {
           final aLire = mangas.where((m) => m.status == 'À lire').length;
           final abandonne = mangas.where((m) => m.status == 'Abandonné').length;
 
-          final manga = mangas.where((m) => m.typeManga == 'Manga').length;
-          final manhwa = mangas.where((m) => m.typeManga == 'Manhwa').length;
-          final manhua = mangas.where((m) => m.typeManga == 'Manhua').length;
-          final novel = mangas.where((m) => m.typeManga == 'Novel').length;
+          final typeCount = <String, int>{'Manga': 0, 'Manhwa': 0, 'Manhua': 0, 'Novel': 0};
+          for (final m in mangas) {
+            typeCount[m.typeManga] = (typeCount[m.typeManga] ?? 0) + 1;
+          }
+          final types = typeCount.entries.toList()
+            ..sort((a, b) => b.value.compareTo(a.value));
+          const typeColors = [
+            AppColors.primary,
+            AppColors.accent,
+            AppColors.statutALire,
+            AppColors.statutEnCours,
+            Colors.teal,
+            Colors.deepOrange,
+          ];
 
           final Map<String, int> genreCount = {};
           for (final m in mangas) {
@@ -102,10 +112,14 @@ class StatisticsPage extends ConsumerWidget {
                   title: l10n.statsByType,
                   child: Column(
                     children: [
-                      _ProgressRow(label: 'Manga', count: manga, total: totalMangas, color: AppColors.primary),
-                      _ProgressRow(label: 'Manhwa', count: manhwa, total: totalMangas, color: AppColors.accent),
-                      _ProgressRow(label: 'Manhua', count: manhua, total: totalMangas, color: AppColors.statutALire),
-                      _ProgressRow(label: 'Novel', count: novel, total: totalMangas, color: AppColors.statutEnCours, last: true),
+                      for (final (i, e) in types.indexed)
+                        _ProgressRow(
+                          label: e.key,
+                          count: e.value,
+                          total: totalMangas,
+                          color: typeColors[i % typeColors.length],
+                          last: i == types.length - 1,
+                        ),
                     ],
                   ),
                 ),

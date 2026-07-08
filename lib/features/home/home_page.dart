@@ -1,11 +1,11 @@
 import 'package:flutter/material.dart';
-import 'package:folio/generated/app_localizations.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:folio/app/constants.dart';
 import 'package:folio/app/providers.dart';
 import 'package:folio/features/library/library_page.dart';
 import 'package:folio/features/settings/settings_page.dart';
 import 'package:folio/features/statistics/statistics_page.dart';
+import 'package:folio/generated/app_localizations.dart';
 import 'package:folio/services/update_service.dart';
 
 class HomePage extends ConsumerStatefulWidget {
