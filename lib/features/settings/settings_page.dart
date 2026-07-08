@@ -3,7 +3,9 @@ import 'dart:io';
 
 import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
+import 'package:folio/generated/app_localizations.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:folio/app/constants.dart';
 import 'package:folio/app/providers.dart';
 import 'package:folio/app/theme.dart';
 import 'package:folio/data/database/app_database.dart';
@@ -41,6 +43,7 @@ class _SettingsPage extends ConsumerState<SettingsPage> {
   }
 
   void _exporter() async {
+    final l10n = AppLocalizations.of(context)!;
     final messenger = ScaffoldMessenger.of(context);
     try {
       final mangas = await _dao.getAllMangas();
@@ -48,7 +51,7 @@ class _SettingsPage extends ConsumerState<SettingsPage> {
       if (mangas.isEmpty) {
         messenger.showSnackBar(SnackBar(
           backgroundColor: AppColors.info,
-          content: const Text('Aucun manga à exporter', textAlign: TextAlign.center, style: TextStyle(color: Colors.black87)),
+          content: Text(l10n.settingsExportEmpty, textAlign: TextAlign.center, style: const TextStyle(color: Colors.black87)),
         ));
         return;
       }
@@ -73,19 +76,28 @@ class _SettingsPage extends ConsumerState<SettingsPage> {
         'imageSource': manga.imageSource,
       }).toList();
 
+      final customGenres = ref.read(customGenresProvider);
+      final customTypes = ref.read(customTypesProvider);
+      final export = <String, dynamic>{
+        'mangas': prepJson,
+        if (customGenres.isNotEmpty) 'custom_genres': customGenres,
+        if (customTypes.isNotEmpty) 'custom_types': customTypes,
+      };
+
       final dossier = await getTemporaryDirectory();
       final fichier = File('${dossier.path}/folio_export.json');
-      await fichier.writeAsString(jsonEncode(prepJson));
+      await fichier.writeAsString(jsonEncode(export));
       await SharePlus.instance.share(ShareParams(files: [XFile(fichier.path)]));
     } catch (e) {
       messenger.showSnackBar(SnackBar(
         backgroundColor: AppColors.danger,
-        content: const Text("Erreur lors de l'export", textAlign: TextAlign.center, style: TextStyle(color: Colors.white)),
+        content: Text(l10n.settingsExportError, textAlign: TextAlign.center, style: const TextStyle(color: Colors.white)),
       ));
     }
   }
 
   void _showThemePicker(BuildContext context, WidgetRef ref, ThemeMode current) {
+    final l10n = AppLocalizations.of(context)!;
     showModalBottomSheet(
       context: context,
       shape: const RoundedRectangleBorder(
@@ -104,25 +116,25 @@ class _SettingsPage extends ConsumerState<SettingsPage> {
                 borderRadius: BorderRadius.circular(2),
               ),
             ),
-            const Text('Apparence', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
+            Text(l10n.settingsThemeTitle, style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
             const SizedBox(height: 16),
             _ThemeOption(
               icon: Icons.light_mode_outlined,
-              label: 'Clair',
+              label: l10n.settingsThemeLight,
               selected: current == ThemeMode.light,
               onTap: () { ref.read(themeModeProvider.notifier).set(ThemeMode.light); Navigator.pop(context); },
             ),
             const SizedBox(height: 8),
             _ThemeOption(
               icon: Icons.brightness_auto_outlined,
-              label: 'Automatique',
+              label: l10n.settingsThemeAuto,
               selected: current == ThemeMode.system,
               onTap: () { ref.read(themeModeProvider.notifier).set(ThemeMode.system); Navigator.pop(context); },
             ),
             const SizedBox(height: 8),
             _ThemeOption(
               icon: Icons.dark_mode_outlined,
-              label: 'Sombre',
+              label: l10n.settingsThemeDark,
               selected: current == ThemeMode.dark,
               onTap: () { ref.read(themeModeProvider.notifier).set(ThemeMode.dark); Navigator.pop(context); },
             ),
@@ -132,11 +144,64 @@ class _SettingsPage extends ConsumerState<SettingsPage> {
     );
   }
 
+  void _showLanguagePicker() {
+    final l10n = AppLocalizations.of(context)!;
+    showModalBottomSheet(
+      context: context,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      builder: (_) => StatefulBuilder(
+        builder: (sheetCtx, setSheetState) {
+          final locale = ref.read(localeProvider);
+          return Padding(
+            padding: const EdgeInsets.fromLTRB(16, 12, 16, 32),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Container(
+                  width: 36, height: 4,
+                  margin: const EdgeInsets.only(bottom: 20),
+                  decoration: BoxDecoration(
+                    color: Colors.grey.shade400,
+                    borderRadius: BorderRadius.circular(2),
+                  ),
+                ),
+                Text(l10n.settingsLanguageTitle, style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
+                const SizedBox(height: 16),
+                _ThemeOption(
+                  icon: Icons.language,
+                  label: '🇫🇷  ${l10n.settingsLanguageFr}',
+                  selected: locale.languageCode == 'fr',
+                  onTap: () {
+                    ref.read(localeProvider.notifier).set(const Locale('fr'));
+                    Navigator.pop(sheetCtx);
+                  },
+                ),
+                const SizedBox(height: 8),
+                _ThemeOption(
+                  icon: Icons.language,
+                  label: '🇬🇧  ${l10n.settingsLanguageEn}',
+                  selected: locale.languageCode == 'en',
+                  onTap: () {
+                    ref.read(localeProvider.notifier).set(const Locale('en'));
+                    Navigator.pop(sheetCtx);
+                  },
+                ),
+              ],
+            ),
+          );
+        },
+      ),
+    );
+  }
+
   void _showStartTabPicker(int current) {
-    const tabs = [
-      (0, Icons.auto_stories_outlined, 'Bibliothèque'),
-      (1, Icons.analytics_outlined, 'Statistiques'),
-      (2, Icons.settings_outlined, 'Paramètres'),
+    final l10n = AppLocalizations.of(context)!;
+    final tabs = [
+      (0, Icons.auto_stories_outlined, l10n.navLibrary),
+      (1, Icons.analytics_outlined, l10n.navStatistics),
+      (2, Icons.settings_outlined, l10n.navSettings),
     ];
     showModalBottomSheet(
       context: context,
@@ -156,7 +221,7 @@ class _SettingsPage extends ConsumerState<SettingsPage> {
                 borderRadius: BorderRadius.circular(2),
               ),
             ),
-            const Text('Onglet de démarrage', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
+            Text(l10n.settingsStartTabTitle, style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
             const SizedBox(height: 16),
             for (final (index, icone, label) in tabs) ...[
               _ThemeOption(
@@ -176,6 +241,80 @@ class _SettingsPage extends ConsumerState<SettingsPage> {
     );
   }
 
+  void _montrerDisclaimerContenu() {
+    final l10n = AppLocalizations.of(context)!;
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      builder: (sheetCtx) => SafeArea(
+        top: false,
+        child: Padding(
+          padding: const EdgeInsets.fromLTRB(24, 12, 24, 24),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Center(
+                child: Container(
+                  width: 36, height: 4,
+                  margin: const EdgeInsets.only(bottom: 20),
+                  decoration: BoxDecoration(
+                    color: Colors.grey.shade400,
+                    borderRadius: BorderRadius.circular(2),
+                  ),
+                ),
+              ),
+              Row(
+                children: [
+                  Icon(Icons.shield_outlined, color: Theme.of(context).colorScheme.primary, size: 22),
+                  const SizedBox(width: 10),
+                  Text(
+                    l10n.copyrightTitle,
+                    style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 16),
+              Text(
+                l10n.copyrightBody,
+                style: const TextStyle(height: 1.6, fontSize: 14),
+              ),
+              const SizedBox(height: 12),
+              GestureDetector(
+                onTap: () async {
+                  final uri = Uri.parse('https://${l10n.copyrightContact}');
+                  if (await canLaunchUrl(uri)) {
+                    await launchUrl(uri, mode: LaunchMode.externalApplication);
+                  }
+                },
+                child: Text(
+                  l10n.copyrightContact,
+                  style: TextStyle(
+                    fontSize: 14,
+                    fontWeight: FontWeight.w600,
+                    color: Theme.of(context).colorScheme.primary,
+                    decoration: TextDecoration.underline,
+                  ),
+                ),
+              ),
+              const SizedBox(height: 24),
+              SizedBox(
+                width: double.infinity,
+                child: FilledButton(
+                  onPressed: () => Navigator.pop(sheetCtx),
+                  child: Text(l10n.commonClose),
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
   Future<void> _revoirIntro() async {
     await resetOnboarding();
     if (!mounted) return;
@@ -183,6 +322,7 @@ class _SettingsPage extends ConsumerState<SettingsPage> {
   }
 
   Future<void> _verifierMaj() async {
+    final l10n = AppLocalizations.of(context)!;
     final messenger = ScaffoldMessenger.of(context);
     try {
       final info = await UpdateService.checkForUpdate(force: true);
@@ -190,15 +330,15 @@ class _SettingsPage extends ConsumerState<SettingsPage> {
       if (info == null) {
         messenger.showSnackBar(SnackBar(
           backgroundColor: AppColors.success,
-          content: const Text('Folio est à jour', textAlign: TextAlign.center, style: TextStyle(color: Colors.black87)),
+          content: Text(l10n.settingsUpToDate, textAlign: TextAlign.center, style: const TextStyle(color: Colors.black87)),
         ));
       } else {
         messenger.showSnackBar(SnackBar(
           backgroundColor: AppColors.info,
           duration: const Duration(seconds: 6),
-          content: Text('Version ${info.latestVersion} disponible', style: const TextStyle(color: Colors.black87)),
+          content: Text(l10n.settingsUpdateAvailable(info.latestVersion), style: const TextStyle(color: Colors.black87)),
           action: SnackBarAction(
-            label: 'Télécharger',
+            label: l10n.settingsUpdateDownload,
             textColor: Colors.black87,
             onPressed: () => UpdateService.openReleasePage(info.releaseUrl),
           ),
@@ -207,7 +347,7 @@ class _SettingsPage extends ConsumerState<SettingsPage> {
     } catch (_) {
       messenger.showSnackBar(SnackBar(
         backgroundColor: AppColors.danger,
-        content: const Text('Vérification impossible (hors ligne ?)', textAlign: TextAlign.center, style: TextStyle(color: Colors.white)),
+        content: Text(AppLocalizations.of(context)!.settingsUpdateError, textAlign: TextAlign.center, style: const TextStyle(color: Colors.white)),
       ));
     }
   }
@@ -220,19 +360,17 @@ class _SettingsPage extends ConsumerState<SettingsPage> {
   }
 
   void _toutEffacer() {
+    final l10n = AppLocalizations.of(context)!;
     showDialog(
       context: context,
       builder: (dialogContext) => AlertDialog(
         icon: Icon(Icons.delete_forever_outlined, color: AppColors.danger, size: 48),
-        title: Text('Tout effacer ?', style: TextStyle(color: AppColors.danger)),
-        content: const Text(
-          'Toute votre bibliothèque sera définitivement supprimée.\n\nPensez à exporter vos données avant !',
-          textAlign: TextAlign.center,
-        ),
+        title: Text(l10n.commonWarning, style: TextStyle(color: AppColors.danger)),
+        content: Text(l10n.settingsClearContent, textAlign: TextAlign.center),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(dialogContext),
-            child: const Text('Annuler'),
+            child: Text(l10n.commonCancel),
           ),
           TextButton(
             style: TextButton.styleFrom(foregroundColor: AppColors.danger),
@@ -243,10 +381,10 @@ class _SettingsPage extends ConsumerState<SettingsPage> {
               await CoverService.toutSupprimer();
               messenger.showSnackBar(SnackBar(
                 backgroundColor: AppColors.success,
-                content: const Text('Bibliothèque effacée', textAlign: TextAlign.center, style: TextStyle(color: Colors.black87)),
+                content: Text(l10n.settingsClearSuccess, textAlign: TextAlign.center, style: const TextStyle(color: Colors.black87)),
               ));
             },
-            child: const Text('Tout effacer'),
+            child: Text(l10n.settingsClear),
           ),
         ],
       ),
@@ -254,6 +392,7 @@ class _SettingsPage extends ConsumerState<SettingsPage> {
   }
 
   Future<void> _toutLier() async {
+    final l10n = AppLocalizations.of(context)!;
     final messenger = ScaffoldMessenger.of(context);
     final mangas = await _dao.getAllMangas();
     final nonLies = mangas.where((m) => m.anilistId == null).length;
@@ -261,7 +400,7 @@ class _SettingsPage extends ConsumerState<SettingsPage> {
     if (nonLies == 0) {
       messenger.showSnackBar(SnackBar(
         backgroundColor: AppColors.success,
-        content: const Text('Tous les mangas sont déjà liés', textAlign: TextAlign.center, style: TextStyle(color: Colors.black87)),
+        content: Text(l10n.settingsSyncAlreadyLinked, textAlign: TextAlign.center, style: const TextStyle(color: Colors.black87)),
       ));
       return;
     }
@@ -271,22 +410,22 @@ class _SettingsPage extends ConsumerState<SettingsPage> {
       context: context,
       builder: (dialogContext) => AlertDialog(
         icon: const Icon(Icons.add_link, size: 44),
-        title: const Text('Tout lier ?'),
+        title: Text(l10n.settingsSyncLinkAll),
         content: Text(
-          '$nonLies manga(s) non lié(s) — environ $estimation.\n\nChaque manga sera lié à la fiche AniList correspondant le mieux à son titre, puis synchronisé. Tu pourras corriger une liaison depuis la fiche (mode édition).',
+          l10n.settingsSyncLinkDialog(nonLies, estimation),
           textAlign: TextAlign.center,
         ),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(dialogContext),
-            child: const Text('Annuler'),
+            child: Text(l10n.commonCancel),
           ),
           FilledButton(
             onPressed: () {
               Navigator.pop(dialogContext);
               ref.read(syncEngineProvider).lierTout();
             },
-            child: const Text('Lancer'),
+            child: Text(l10n.settingsSyncLaunch),
           ),
         ],
       ),
@@ -294,6 +433,7 @@ class _SettingsPage extends ConsumerState<SettingsPage> {
   }
 
   Future<void> _toutSynchroniser() async {
+    final l10n = AppLocalizations.of(context)!;
     final messenger = ScaffoldMessenger.of(context);
     final mangas = await _dao.getAllMangas();
     final total = mangas.length;
@@ -301,7 +441,7 @@ class _SettingsPage extends ConsumerState<SettingsPage> {
     if (total == 0) {
       messenger.showSnackBar(SnackBar(
         backgroundColor: AppColors.info,
-        content: const Text('La bibliothèque est vide', textAlign: TextAlign.center, style: TextStyle(color: Colors.black87)),
+        content: Text(l10n.settingsSyncLibraryEmpty, textAlign: TextAlign.center, style: const TextStyle(color: Colors.black87)),
       ));
       return;
     }
@@ -311,22 +451,22 @@ class _SettingsPage extends ConsumerState<SettingsPage> {
       context: context,
       builder: (dialogContext) => AlertDialog(
         icon: const Icon(Icons.sync, size: 44),
-        title: const Text('Tout synchroniser ?'),
+        title: Text(l10n.settingsSyncAll),
         content: Text(
-          '$total manga(s) — environ $estimation.\n\nLes mangas non liés seront d\'abord liés à AniList. La synchronisation tournera en arrière-plan, tu peux continuer à utiliser l\'application.',
+          l10n.settingsSyncAllDialog(total, estimation),
           textAlign: TextAlign.center,
         ),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(dialogContext),
-            child: const Text('Annuler'),
+            child: Text(l10n.commonCancel),
           ),
           FilledButton(
             onPressed: () {
               Navigator.pop(dialogContext);
               ref.read(syncEngineProvider).toutSynchroniser();
             },
-            child: const Text('Lancer'),
+            child: Text(l10n.settingsSyncLaunch),
           ),
         ],
       ),
@@ -387,24 +527,29 @@ class _SettingsPage extends ConsumerState<SettingsPage> {
   }
 
   void _importer() {
+    final l10n = AppLocalizations.of(context)!;
     showDialog(
       context: context,
       builder: (dialogContext) => AlertDialog(
         actionsAlignment: MainAxisAlignment.spaceBetween,
-        icon: Icon(
-          Icons.warning_amber_rounded,
-          color: AppColors.danger,
-          size: 48,
-        ),
-        title: Text('Attention !', style: TextStyle(color: AppColors.danger)),
-        content: Text(
-          'Cette action est irréversible.\nLes mangas déjà présents seront définitivement supprimés.',
-          textAlign: TextAlign.center,
+        icon: Icon(Icons.warning_amber_rounded, color: AppColors.danger, size: 48),
+        title: Text(l10n.commonWarning, style: TextStyle(color: AppColors.danger)),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Text(l10n.settingsImportWarning, textAlign: TextAlign.center),
+            const SizedBox(height: 12),
+            Text(
+              l10n.settingsImportWarningTags,
+              textAlign: TextAlign.center,
+              style: const TextStyle(fontSize: 13, color: Colors.grey),
+            ),
+          ],
         ),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(dialogContext),
-            child: Text('Annuler'),
+            child: Text(l10n.commonCancel),
           ),
           TextButton(
             onPressed: () async {
@@ -422,24 +567,46 @@ class _SettingsPage extends ConsumerState<SettingsPage> {
                   throw const FormatException('Fichier trop volumineux');
                 }
                 final contenu = await fichier.readAsString();
-                final List<dynamic> listeJson = jsonDecode(contenu);
+                final dynamic decoded = jsonDecode(contenu);
 
-                final companions =
-                    listeJson.map((item) => _companionDepuisJson(item)).toList();
+                final List<dynamic> listeJson;
+                final List<String> importedGenres;
+                final List<String> importedTypes;
 
+                if (decoded is List) {
+                  listeJson = decoded;
+                  importedGenres = [];
+                  importedTypes = [];
+                } else if (decoded is Map<String, dynamic>) {
+                  listeJson = decoded['mangas'] as List<dynamic>? ?? [];
+                  importedGenres = List<String>.from(decoded['custom_genres'] as List? ?? []);
+                  importedTypes = List<String>.from(decoded['custom_types'] as List? ?? []);
+                } else {
+                  throw const FormatException('Format invalide');
+                }
+
+                final companions = listeJson.map((item) => _companionDepuisJson(item)).toList();
                 await _dao.replaceAllMangas(companions);
+
+                for (final g in importedGenres) {
+                  await ref.read(customGenresProvider.notifier).add(g);
+                }
+                for (final t in importedTypes) {
+                  await ref.read(customTypesProvider.notifier).add(t);
+                }
+
                 messenger.showSnackBar(SnackBar(
                   backgroundColor: AppColors.success,
-                  content: Text('${companions.length} manga(s) importé(s)', textAlign: TextAlign.center, style: const TextStyle(color: Colors.black87)),
+                  content: Text(l10n.settingsImportSuccess(companions.length), textAlign: TextAlign.center, style: const TextStyle(color: Colors.black87)),
                 ));
               } catch (e) {
                 messenger.showSnackBar(SnackBar(
                   backgroundColor: AppColors.danger,
-                  content: const Text('Fichier invalide ou corrompu', textAlign: TextAlign.center, style: TextStyle(color: Colors.white)),
+                  content: Text(l10n.settingsImportError, textAlign: TextAlign.center, style: const TextStyle(color: Colors.white)),
                 ));
               }
             },
-            child: Text('Continuer'),
+            child: Text(l10n.settingsImportContinue),
           ),
         ],
       ),
@@ -448,15 +615,16 @@ class _SettingsPage extends ConsumerState<SettingsPage> {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
     return Scaffold(
-      appBar: AppBar(title: const Text('Paramètres')),
+      appBar: AppBar(title: Text(l10n.settingsTitle)),
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(16),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
 
-            _SectionLabel('Général'),
+            _SectionLabel(l10n.settingsSectionGeneral),
             Card(
               margin: EdgeInsets.zero,
               child: Column(
@@ -465,16 +633,32 @@ class _SettingsPage extends ConsumerState<SettingsPage> {
                     builder: (context, ref, _) {
                       final tab = ref.watch(startTabProvider);
                       final label = switch (tab) {
-                        1 => 'Statistiques',
-                        2 => 'Paramètres',
-                        _ => 'Bibliothèque',
+                        1 => l10n.navStatistics,
+                        2 => l10n.navSettings,
+                        _ => l10n.navLibrary,
                       };
                       return _SettingsTile(
                         icon: Icons.home_outlined,
                         iconColor: AppColors.primary,
-                        title: 'Onglet de démarrage',
+                        title: l10n.settingsStartTab,
                         trailing: Text(label, style: const TextStyle(color: Colors.grey, fontSize: 13)),
                         onTap: () => _showStartTabPicker(tab),
+                      );
+                    },
+                  ),
+                  const Divider(height: 1, indent: 68),
+                  Consumer(
+                    builder: (context, ref, _) {
+                      final locale = ref.watch(localeProvider);
+                      final label = locale.languageCode == 'en'
+                          ? l10n.settingsLanguageEn
+                          : l10n.settingsLanguageFr;
+                      return _SettingsTile(
+                        icon: Icons.language_outlined,
+                        iconColor: Colors.indigo,
+                        title: l10n.settingsLanguage,
+                        trailing: Text(label, style: const TextStyle(color: Colors.grey, fontSize: 13)),
+                        onTap: _showLanguagePicker,
                       );
                     },
                   ),
@@ -482,8 +666,8 @@ class _SettingsPage extends ConsumerState<SettingsPage> {
                   _SettingsTile(
                     icon: Icons.replay_outlined,
                     iconColor: Colors.teal,
-                    title: 'Revoir l\'introduction',
-                    subtitle: 'Rejouer les écrans de bienvenue',
+                    title: l10n.settingsReplayIntro,
+                    subtitle: l10n.settingsReplayIntroSub,
                     onTap: _revoirIntro,
                   ),
                 ],
@@ -491,7 +675,7 @@ class _SettingsPage extends ConsumerState<SettingsPage> {
             ),
             const SizedBox(height: 24),
 
-            _SectionLabel('Données'),
+            _SectionLabel(l10n.settingsSectionData),
             Card(
               margin: EdgeInsets.zero,
               child: Column(
@@ -499,24 +683,24 @@ class _SettingsPage extends ConsumerState<SettingsPage> {
                   _SettingsTile(
                     icon: Icons.upload_outlined,
                     iconColor: Colors.blue,
-                    title: 'Exporter la bibliothèque',
-                    subtitle: 'Partager un fichier JSON',
+                    title: l10n.settingsExport,
+                    subtitle: l10n.settingsExportSub,
                     onTap: _exporter,
                   ),
                   const Divider(height: 1, indent: 68),
                   _SettingsTile(
                     icon: Icons.download_outlined,
                     iconColor: Colors.green,
-                    title: 'Importer la bibliothèque',
-                    subtitle: 'Remplace les données existantes',
+                    title: l10n.settingsImport,
+                    subtitle: l10n.settingsImportSub,
                     onTap: _importer,
                   ),
                   const Divider(height: 1, indent: 68),
                   _SettingsTile(
                     icon: Icons.delete_forever_outlined,
                     iconColor: AppColors.danger,
-                    title: 'Tout effacer',
-                    subtitle: 'Supprime définitivement la bibliothèque',
+                    title: l10n.settingsClear,
+                    subtitle: l10n.settingsClearSub,
                     onTap: _toutEffacer,
                   ),
                 ],
@@ -524,7 +708,7 @@ class _SettingsPage extends ConsumerState<SettingsPage> {
             ),
             const SizedBox(height: 24),
 
-            _SectionLabel('Synchronisation'),
+            _SectionLabel(l10n.settingsSectionSync),
             Card(
               margin: EdgeInsets.zero,
               child: Consumer(
@@ -535,8 +719,8 @@ class _SettingsPage extends ConsumerState<SettingsPage> {
                     children: [
                       SwitchListTile(
                         secondary: const Icon(Icons.sync_outlined),
-                        title: const Text('Synchronisation AniList'),
-                        subtitle: const Text('Uniquement à la demande, jamais automatique'),
+                        title: Text(l10n.settingsSyncAnilist),
+                        subtitle: Text(l10n.settingsSyncAnilistSub),
                         value: sync.maitre,
                         onChanged: (v) {
                           notifier.setMaitre(v);
@@ -545,34 +729,28 @@ class _SettingsPage extends ConsumerState<SettingsPage> {
                       ),
                       const Divider(height: 1, indent: 68),
                       _SyncFieldSwitch(
-                        label: 'Images de couverture',
+                        label: l10n.settingsSyncCovers,
                         value: sync.image,
                         enabled: sync.maitre,
                         onChanged: notifier.setImage,
                       ),
                       _SyncFieldSwitch(
-                        label: 'Descriptions',
+                        label: l10n.settingsSyncDescriptions,
                         value: sync.description,
                         enabled: sync.maitre,
                         onChanged: notifier.setDescription,
                       ),
                       _SyncFieldSwitch(
-                        label: 'Genres',
+                        label: l10n.settingsSyncGenres,
                         value: sync.genres,
                         enabled: sync.maitre,
                         onChanged: notifier.setGenres,
                       ),
                       _SyncFieldSwitch(
-                        label: 'Types (Manga, Manhwa…)',
+                        label: l10n.settingsSyncTypes,
                         value: sync.type,
                         enabled: sync.maitre,
                         onChanged: notifier.setType,
-                      ),
-                      _SyncFieldSwitch(
-                        label: 'Descriptions en français (MangaDex)',
-                        value: sync.mangadex,
-                        enabled: sync.maitre && sync.description,
-                        onChanged: notifier.setMangadex,
                       ),
                       const Divider(height: 1, indent: 68),
                       Consumer(
@@ -582,8 +760,8 @@ class _SettingsPage extends ConsumerState<SettingsPage> {
                             return _SettingsTile(
                               icon: Icons.stop_circle_outlined,
                               iconColor: AppColors.danger,
-                              title: 'Arrêter la synchronisation',
-                              subtitle: 'Une synchronisation est en cours',
+                              title: l10n.settingsSyncStop,
+                              subtitle: l10n.settingsSyncStopSub,
                               onTap: () => ref.read(syncEngineProvider).annuler(),
                             );
                           }
@@ -592,31 +770,29 @@ class _SettingsPage extends ConsumerState<SettingsPage> {
                               _SettingsTile(
                                 icon: Icons.add_link,
                                 iconColor: AppColors.accent,
-                                title: 'Tout lier',
-                                subtitle: 'Lie automatiquement les mangas non liés',
+                                title: l10n.settingsSyncLinkAll,
+                                subtitle: l10n.settingsSyncLinkAllSub,
                                 onTap: sync.maitre ? _toutLier : null,
                               ),
                               const Divider(height: 1, indent: 68),
                               _SettingsTile(
                                 icon: Icons.sync,
                                 iconColor: AppColors.primary,
-                                title: 'Tout synchroniser',
-                                subtitle: 'Lie et met à jour toute la bibliothèque',
+                                title: l10n.settingsSyncAll,
+                                subtitle: l10n.settingsSyncAllSub,
                                 onTap: sync.maitre ? _toutSynchroniser : null,
                               ),
                             ],
                           );
                         },
                       ),
-                      const Padding(
-                        padding: EdgeInsets.fromLTRB(16, 4, 16, 12),
+                      Padding(
+                        padding: const EdgeInsets.fromLTRB(16, 4, 16, 12),
                         child: Align(
                           alignment: Alignment.centerLeft,
                           child: Text(
-                            'Chaque manga peut aussi désactiver ces champs '
-                            'individuellement dans sa fiche. Données fournies '
-                            'par AniList et MangaDex.',
-                            style: TextStyle(fontSize: 12, color: Colors.grey),
+                            l10n.settingsSyncNote,
+                            style: const TextStyle(fontSize: 12, color: Colors.grey),
                           ),
                         ),
                       ),
@@ -627,21 +803,21 @@ class _SettingsPage extends ConsumerState<SettingsPage> {
             ),
             const SizedBox(height: 24),
 
-            _SectionLabel('Apparence'),
+            _SectionLabel(l10n.settingsSectionAppearance),
             Card(
               margin: EdgeInsets.zero,
               child: Consumer(
                 builder: (context, ref, _) {
                   final mode = ref.watch(themeModeProvider);
                   final label = switch (mode) {
-                    ThemeMode.light => 'Clair',
-                    ThemeMode.dark => 'Sombre',
-                    ThemeMode.system => 'Automatique',
+                    ThemeMode.light => l10n.settingsThemeLight,
+                    ThemeMode.dark => l10n.settingsThemeDark,
+                    ThemeMode.system => l10n.settingsThemeAuto,
                   };
                   return _SettingsTile(
                     icon: Icons.palette_outlined,
                     iconColor: Colors.purple,
-                    title: 'Thème',
+                    title: l10n.settingsTheme,
                     trailing: Text(label, style: const TextStyle(color: Colors.grey, fontSize: 13)),
                     onTap: () => _showThemePicker(context, ref, mode),
                   );
@@ -650,24 +826,34 @@ class _SettingsPage extends ConsumerState<SettingsPage> {
             ),
             const SizedBox(height: 24),
 
-            _SectionLabel('À propos'),
+            _SectionLabel(l10n.settingsSectionAbout),
             Card(
               margin: EdgeInsets.zero,
               child: Column(
                 children: [
+                  if (!estBuildPlayStore) ...[
+                    _SettingsTile(
+                      icon: Icons.system_update_alt_outlined,
+                      iconColor: AppColors.accent,
+                      title: l10n.settingsCheckUpdate,
+                      subtitle: l10n.settingsCheckUpdateSub,
+                      onTap: _verifierMaj,
+                    ),
+                    const Divider(height: 1, indent: 68),
+                  ],
                   _SettingsTile(
-                    icon: Icons.system_update_alt_outlined,
-                    iconColor: AppColors.accent,
-                    title: 'Vérifier les mises à jour',
-                    subtitle: 'Rechercher une nouvelle version',
-                    onTap: _verifierMaj,
+                    icon: Icons.shield_outlined,
+                    iconColor: Colors.green.shade700,
+                    title: l10n.settingsCopyright,
+                    subtitle: l10n.settingsCopyrightSub,
+                    onTap: _montrerDisclaimerContenu,
                   ),
                   const Divider(height: 1, indent: 68),
                   _SettingsTile(
                     icon: Icons.code_outlined,
                     iconColor: Colors.blueGrey,
-                    title: 'Code source',
-                    subtitle: 'Folio est open source (GitHub)',
+                    title: l10n.settingsSourceCode,
+                    subtitle: l10n.settingsSourceCodeSub,
                     onTap: _ouvrirCodeSource,
                   ),
                 ],

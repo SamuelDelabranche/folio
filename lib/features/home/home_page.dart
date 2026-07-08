@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
+import 'package:folio/generated/app_localizations.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:folio/app/constants.dart';
 import 'package:folio/app/providers.dart';
 import 'package:folio/features/library/library_page.dart';
 import 'package:folio/features/settings/settings_page.dart';
@@ -21,26 +23,28 @@ class _HomePage extends ConsumerState<HomePage> {
   void initState() {
     super.initState();
     _indexActif = ref.read(startTabProvider);
-    UpdateService.checkForUpdate().then((info) {
-      if (info != null && mounted) _showUpdateDialog(info);
-    });
+    if (!estBuildPlayStore) {
+      UpdateService.checkForUpdate().then((info) {
+        if (info != null && mounted) _showUpdateDialog(info);
+      });
+    }
   }
 
   void _showUpdateDialog(UpdateInfo info) {
+    final l10n = AppLocalizations.of(context)!;
     showDialog(
       context: context,
       builder: (ctx) => AlertDialog(
         icon: Icon(Icons.system_update_alt_outlined, size: 44, color: Theme.of(ctx).colorScheme.primary),
-        title: const Text('Mise à jour disponible'),
+        title: Text(l10n.updateDialogTitle),
         content: Text(
-          'La version ${info.latestVersion} est disponible.\n\n'
-          'Télécharge le nouvel APK depuis GitHub et installe-le pour mettre à jour.',
+          l10n.updateDialogContent(info.latestVersion),
           textAlign: TextAlign.center,
         ),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(ctx),
-            child: const Text('Plus tard'),
+            child: Text(l10n.updateDialogLater),
           ),
           FilledButton.icon(
             onPressed: () {
@@ -48,7 +52,7 @@ class _HomePage extends ConsumerState<HomePage> {
               UpdateService.openReleasePage(info.releaseUrl);
             },
             icon: const Icon(Icons.download_outlined),
-            label: const Text('Télécharger'),
+            label: Text(l10n.updateDialogDownload),
           ),
         ],
       ),
@@ -57,6 +61,7 @@ class _HomePage extends ConsumerState<HomePage> {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
     return Scaffold(
       body: AnimatedSwitcher(
         duration: const Duration(milliseconds: 200),
@@ -67,26 +72,22 @@ class _HomePage extends ConsumerState<HomePage> {
       ),
       bottomNavigationBar: NavigationBar(
         selectedIndex: _indexActif,
-        onDestinationSelected: (value) {
-          setState(() {
-            _indexActif = value;
-          });
-        },
+        onDestinationSelected: (value) => setState(() => _indexActif = value),
         destinations: [
           NavigationDestination(
-            selectedIcon: Icon(Icons.auto_stories),
-            icon: Icon(Icons.auto_stories_outlined),
-            label: "Bibliothèque",
+            selectedIcon: const Icon(Icons.auto_stories),
+            icon: const Icon(Icons.auto_stories_outlined),
+            label: l10n.navLibrary,
           ),
           NavigationDestination(
-            selectedIcon: Icon(Icons.analytics),
-            icon: Icon(Icons.analytics_outlined),
-            label: "Statistiques",
+            selectedIcon: const Icon(Icons.analytics),
+            icon: const Icon(Icons.analytics_outlined),
+            label: l10n.navStatistics,
           ),
           NavigationDestination(
-            selectedIcon: Icon(Icons.settings),
-            icon: Icon(Icons.settings_outlined),
-            label: "Paramètres",
+            selectedIcon: const Icon(Icons.settings),
+            icon: const Icon(Icons.settings_outlined),
+            label: l10n.navSettings,
           ),
         ],
       ),

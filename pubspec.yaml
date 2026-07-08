@@ -1,5 +1,5 @@
 name: folio
-description: "A new Flutter project."
+description: "Folio — suivi de lecture de mangas, manhwas et novels. Bibliothèque personnelle, statistiques et synchronisation AniList."
 # The following line prevents the package from being accidentally published to
 # pub.dev using `flutter pub publish`. This is preferred for private packages.
 publish_to: 'none' # Remove this line if you wish to publish to pub.dev
@@ -28,6 +28,9 @@ environment:
 # the latest version available on pub.dev. To see which dependencies have newer
 # versions available, run `flutter pub outdated`.
 dependencies:
+  flutter_localizations:
+    sdk: flutter
+  intl: any
   drift: ^2.26.0
   drift_flutter: 0.2.8
   path_provider: ^2.1.5
@@ -71,6 +74,7 @@ dev_dependencies:
 
 # The following section is specific to Flutter packages.
 flutter:
+  generate: true
 
   # The following line ensures that the Material Icons font is
   # included with your application, so that you can use the icons in

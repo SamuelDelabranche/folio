@@ -70,7 +70,6 @@ class SyncPrefs {
   final bool description;
   final bool genres;
   final bool type;
-  final bool mangadex;
 
   const SyncPrefs({
     this.maitre = true,
@@ -78,17 +77,15 @@ class SyncPrefs {
     this.description = true,
     this.genres = true,
     this.type = true,
-    this.mangadex = true,
   });
 
-  SyncPrefs copyWith({bool? maitre, bool? image, bool? description, bool? genres, bool? type, bool? mangadex}) {
+  SyncPrefs copyWith({bool? maitre, bool? image, bool? description, bool? genres, bool? type}) {
     return SyncPrefs(
       maitre: maitre ?? this.maitre,
       image: image ?? this.image,
       description: description ?? this.description,
       genres: genres ?? this.genres,
       type: type ?? this.type,
-      mangadex: mangadex ?? this.mangadex,
     );
   }
 }
@@ -102,7 +99,6 @@ class SyncPrefsNotifier extends Notifier<SyncPrefs> {
     'description': 'sync_description_global',
     'genres': 'sync_genres_global',
     'type': 'sync_type_global',
-    'mangadex': 'sync_mangadex_global',
   };
 
   @override
@@ -118,7 +114,6 @@ class SyncPrefsNotifier extends Notifier<SyncPrefs> {
   Future<void> setDescription(bool v) async { state = state.copyWith(description: v); await _save('description', v); }
   Future<void> setGenres(bool v) async { state = state.copyWith(genres: v); await _save('genres', v); }
   Future<void> setType(bool v) async { state = state.copyWith(type: v); await _save('type', v); }
-  Future<void> setMangadex(bool v) async { state = state.copyWith(mangadex: v); await _save('mangadex', v); }
 
   Future<void> load() async {
     final prefs = await SharedPreferences.getInstance();
@@ -128,10 +123,70 @@ class SyncPrefsNotifier extends Notifier<SyncPrefs> {
       description: prefs.getBool(_keys['description']!) ?? true,
       genres: prefs.getBool(_keys['genres']!) ?? true,
       type: prefs.getBool(_keys['type']!) ?? true,
-      mangadex: prefs.getBool(_keys['mangadex']!) ?? true,
     );
   }
 }
+
+final localeProvider = NotifierProvider<LocaleNotifier, Locale>(LocaleNotifier.new);
+
+class LocaleNotifier extends Notifier<Locale> {
+  static const _key = 'locale';
+
+  @override
+  Locale build() => const Locale('fr');
+
+  Future<void> set(Locale locale) async {
+    state = locale;
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setString(_key, locale.languageCode);
+  }
+
+  Future<void> load() async {
+    final prefs = await SharedPreferences.getInstance();
+    final saved = prefs.getString(_key);
+    if (saved != null) state = Locale(saved);
+  }
+}
+
+// Tags personnalisés (genres / types) — stockés dans SharedPreferences
+abstract class _CustomTagsNotifier extends Notifier<List<String>> {
+  String get _prefKey;
+
+  @override
+  List<String> build() => const [];
+
+  Future<void> load() async {
+    final prefs = await SharedPreferences.getInstance();
+    state = prefs.getStringList(_prefKey) ?? [];
+  }
+
+  Future<void> add(String tag) async {
+    final t = tag.trim();
+    if (t.isEmpty || state.contains(t)) return;
+    state = [...state, t];
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setStringList(_prefKey, state);
+  }
+
+  Future<void> remove(String tag) async {
+    state = state.where((t) => t != tag).toList();
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setStringList(_prefKey, state);
+  }
+}
+
+class CustomGenresNotifier extends _CustomTagsNotifier {
+  @override
+  String get _prefKey => 'custom_genres';
+}
+
+class CustomTypesNotifier extends _CustomTagsNotifier {
+  @override
+  String get _prefKey => 'custom_types';
+}
+
+final customGenresProvider = NotifierProvider<CustomGenresNotifier, List<String>>(CustomGenresNotifier.new);
+final customTypesProvider = NotifierProvider<CustomTypesNotifier, List<String>>(CustomTypesNotifier.new);
 
 class ThemeModeNotifier extends Notifier<ThemeMode> {
   static const _key = 'theme_mode';

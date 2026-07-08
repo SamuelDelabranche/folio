@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:folio/generated/app_localizations.dart';
+import 'package:folio/app/constants.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:folio/app/providers.dart';
 import 'package:folio/app/theme.dart';
@@ -8,11 +10,12 @@ class StatisticsPage extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final l10n = AppLocalizations.of(context)!;
     return Scaffold(
-      appBar: AppBar(title: const Text('Statistiques')),
+      appBar: AppBar(title: Text(l10n.statsTitle)),
       body: ref.watch(mangasProvider).when(
         loading: () => const Center(child: CircularProgressIndicator()),
-        error: (err, stack) => Center(child: Text('Erreur: $err')),
+        error: (err, stack) => Center(child: Text('${l10n.commonWarning} $err')),
         data: (mangas) {
           final totalMangas = mangas.length;
           final moyenneNote = mangas.isEmpty
@@ -57,21 +60,21 @@ class StatisticsPage extends ConsumerWidget {
                         children: [
                           _OverviewStat(
                             value: '$totalMangas',
-                            label: 'Mangas',
+                            label: l10n.statsMangas,
                             icon: Icons.auto_stories_outlined,
                             color: AppColors.primary,
                           ),
                           const VerticalDivider(thickness: 1, width: 32),
                           _OverviewStat(
                             value: moyenneNote.toStringAsFixed(1),
-                            label: 'Note moy.',
+                            label: l10n.statsAvgRating,
                             icon: Icons.star_outline,
                             color: AppColors.stars,
                           ),
                           const VerticalDivider(thickness: 1, width: 32),
                           _OverviewStat(
                             value: '${totalChapitres.toInt()}',
-                            label: 'Chapitres',
+                            label: l10n.statsChapters,
                             icon: Icons.menu_book_outlined,
                             color: Colors.teal,
                           ),
@@ -83,20 +86,20 @@ class StatisticsPage extends ConsumerWidget {
                 const SizedBox(height: 12),
 
                 _SectionCard(
-                  title: 'Par statut',
+                  title: l10n.statsByStatus,
                   child: Column(
                     children: [
-                      _ProgressRow(label: 'Terminé', count: termine, total: totalMangas, color: AppColors.statutTermine),
-                      _ProgressRow(label: 'En cours', count: enCours, total: totalMangas, color: AppColors.statutEnCours),
-                      _ProgressRow(label: 'À lire', count: aLire, total: totalMangas, color: AppColors.statutALire),
-                      _ProgressRow(label: 'Abandonné', count: abandonne, total: totalMangas, color: AppColors.statutAbandonne, last: true),
+                      _ProgressRow(label: l10n.statusFinished, count: termine, total: totalMangas, color: AppColors.statutTermine),
+                      _ProgressRow(label: l10n.statusReading, count: enCours, total: totalMangas, color: AppColors.statutEnCours),
+                      _ProgressRow(label: l10n.statusToRead, count: aLire, total: totalMangas, color: AppColors.statutALire),
+                      _ProgressRow(label: l10n.statusDropped, count: abandonne, total: totalMangas, color: AppColors.statutAbandonne, last: true),
                     ],
                   ),
                 ),
                 const SizedBox(height: 12),
 
                 _SectionCard(
-                  title: 'Par type',
+                  title: l10n.statsByType,
                   child: Column(
                     children: [
                       _ProgressRow(label: 'Manga', count: manga, total: totalMangas, color: AppColors.primary),
@@ -109,19 +112,17 @@ class StatisticsPage extends ConsumerWidget {
                 const SizedBox(height: 12),
 
                 _SectionCard(
-                  title: 'Top genres',
+                  title: l10n.statsTopGenres,
                   child: top5.isEmpty
-                      ? const Text('Aucun genre renseigné')
+                      ? Text(l10n.statsNoGenre)
                       : Wrap(
                           spacing: 8,
                           runSpacing: 4,
                           children: top5
-                              .map(
-                                (e) => Chip(
-                                  label: Text('${e.key}  ${e.value}'),
-                                  avatar: const Icon(Icons.tag, size: 14),
-                                ),
-                              )
+                              .map((e) => Chip(
+                                    label: Text('${genreLabel(e.key, l10n)}  ${e.value}'),
+                                    avatar: const Icon(Icons.tag, size: 14),
+                                  ))
                               .toList(),
                         ),
                 ),
@@ -150,10 +151,7 @@ class _OverviewStat extends StatelessWidget {
         children: [
           Icon(icon, size: 22, color: color),
           const SizedBox(height: 6),
-          Text(
-            value,
-            style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold, color: color),
-          ),
+          Text(value, style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold, color: color)),
           const SizedBox(height: 2),
           Text(label, style: const TextStyle(fontSize: 12, color: Colors.grey)),
         ],
@@ -229,7 +227,7 @@ class _ProgressRow extends StatelessWidget {
           child: LinearProgressIndicator(
             value: percent,
             minHeight: 6,
-            backgroundColor: color.withValues(alpha:0.12),
+            backgroundColor: color.withValues(alpha: 0.12),
             valueColor: AlwaysStoppedAnimation<Color>(color),
           ),
         ),

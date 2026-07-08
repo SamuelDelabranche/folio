@@ -1,5 +1,6 @@
 import 'dart:io';
 import 'package:flutter/material.dart';
+import 'package:folio/generated/app_localizations.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:folio/app/theme.dart';
 import 'package:folio/features/home/home_page.dart';
@@ -18,30 +19,6 @@ class _Slide {
     required this.color,
   });
 }
-
-const _slides = [
-  _Slide(
-    tag: 'Bienvenue',
-    title: 'Ta bibliothèque manga\nen un endroit',
-    desc: 'Ajoute, organise et retrouve\ntous tes mangas facilement.',
-    emoji: '📚',
-    color: AppColors.primaryLight,
-  ),
-  _Slide(
-    tag: 'Statistiques',
-    title: 'Note et analyse\nta progression',
-    desc: 'Suis tes chapitres lus, tes notes\net tes genres préférés.',
-    emoji: '⭐',
-    color: AppColors.accent,
-  ),
-  _Slide(
-    tag: 'Prêt !',
-    title: 'Lance-toi dans\nta collection',
-    desc: 'Importe ta liste existante ou\ncommence une nouvelle bibliothèque.',
-    emoji: '🚀',
-    color: Color(0xFF9B5DE5),
-  ),
-];
 
 Future<bool> isFirstLaunch() async {
   final dir = await getApplicationDocumentsDirectory();
@@ -71,9 +48,16 @@ class OnboardingPage extends StatefulWidget {
 class _OnboardingPageState extends State<OnboardingPage> {
   final _controller = PageController();
   int _current = 0;
+  static const _slidesCount = 3;
+
+  List<_Slide> _buildSlides(AppLocalizations l10n) => [
+    _Slide(tag: l10n.onboardingSlide1Tag, title: l10n.onboardingSlide1Title, desc: l10n.onboardingSlide1Desc, emoji: '📚', color: AppColors.primaryLight),
+    _Slide(tag: l10n.onboardingSlide2Tag, title: l10n.onboardingSlide2Title, desc: l10n.onboardingSlide2Desc, emoji: '⭐', color: AppColors.accent),
+    _Slide(tag: l10n.onboardingSlide3Tag, title: l10n.onboardingSlide3Title, desc: l10n.onboardingSlide3Desc, emoji: '🚀', color: const Color(0xFF9B5DE5)),
+  ];
 
   void _next() {
-    if (_current < _slides.length - 1) {
+    if (_current < _slidesCount - 1) {
       _controller.nextPage(
         duration: const Duration(milliseconds: 400),
         curve: Curves.easeInOut,
@@ -102,24 +86,27 @@ class _OnboardingPageState extends State<OnboardingPage> {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
+    final slides = _buildSlides(l10n);
+
     return Scaffold(
       backgroundColor: AppColors.backgroundDark,
       body: Stack(
         children: [
           PageView.builder(
             controller: _controller,
-            itemCount: _slides.length,
+            itemCount: slides.length,
             onPageChanged: (i) => setState(() => _current = i),
-            itemBuilder: (_, i) => _SlidePage(slide: _slides[i]),
+            itemBuilder: (_, i) => _SlidePage(slide: slides[i]),
           ),
 
-          if (_current < _slides.length - 1)
+          if (_current < slides.length - 1)
             Positioned(
               top: MediaQuery.of(context).padding.top + 16,
               right: 24,
               child: TextButton(
                 onPressed: _finish,
-                child: const Text('Passer', style: TextStyle(color: Colors.grey, fontSize: 13, letterSpacing: 1)),
+                child: Text(l10n.onboardingSkip, style: const TextStyle(color: Colors.grey, fontSize: 13, letterSpacing: 1)),
               ),
             ),
 
@@ -131,7 +118,7 @@ class _OnboardingPageState extends State<OnboardingPage> {
               children: [
                 Row(
                   mainAxisAlignment: MainAxisAlignment.center,
-                  children: List.generate(_slides.length, (i) {
+                  children: List.generate(slides.length, (i) {
                     final isActive = i == _current;
                     return AnimatedContainer(
                       duration: const Duration(milliseconds: 300),
@@ -140,7 +127,7 @@ class _OnboardingPageState extends State<OnboardingPage> {
                       height: 7,
                       decoration: BoxDecoration(
                         borderRadius: BorderRadius.circular(4),
-                        color: isActive ? _slides[_current].color : Colors.white12,
+                        color: isActive ? slides[_current].color : Colors.white12,
                       ),
                     );
                   }),
@@ -154,11 +141,11 @@ class _OnboardingPageState extends State<OnboardingPage> {
                     decoration: BoxDecoration(
                       borderRadius: BorderRadius.circular(16),
                       gradient: LinearGradient(
-                        colors: [_slides[_current].color, AppColors.accent],
+                        colors: [slides[_current].color, AppColors.accent],
                       ),
                       boxShadow: [
                         BoxShadow(
-                          color: _slides[_current].color.withValues(alpha:0.4),
+                          color: slides[_current].color.withValues(alpha: 0.4),
                           blurRadius: 20,
                           offset: const Offset(0, 8),
                         ),
@@ -172,7 +159,7 @@ class _OnboardingPageState extends State<OnboardingPage> {
                         child: Padding(
                           padding: const EdgeInsets.symmetric(vertical: 16),
                           child: Text(
-                            _current == _slides.length - 1 ? 'Commencer' : 'Suivant',
+                            _current == slides.length - 1 ? l10n.onboardingStart : l10n.onboardingNext,
                             textAlign: TextAlign.center,
                             style: const TextStyle(
                               color: Colors.white,
@@ -215,13 +202,13 @@ class _SlidePage extends StatelessWidget {
               shape: BoxShape.circle,
               gradient: RadialGradient(
                 colors: [
-                  slide.color.withValues(alpha:0.35),
-                  slide.color.withValues(alpha:0.05),
+                  slide.color.withValues(alpha: 0.35),
+                  slide.color.withValues(alpha: 0.05),
                 ],
               ),
               boxShadow: [
                 BoxShadow(
-                  color: slide.color.withValues(alpha:0.3),
+                  color: slide.color.withValues(alpha: 0.3),
                   blurRadius: 60,
                   spreadRadius: 10,
                 ),
@@ -237,7 +224,7 @@ class _SlidePage extends StatelessWidget {
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 5),
             decoration: BoxDecoration(
-              color: slide.color.withValues(alpha:0.15),
+              color: slide.color.withValues(alpha: 0.15),
               borderRadius: BorderRadius.circular(20),
             ),
             child: Text(

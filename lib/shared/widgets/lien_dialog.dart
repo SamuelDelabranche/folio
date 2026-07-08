@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
+import 'package:folio/generated/app_localizations.dart';
 import 'package:folio/data/models/lien.dart';
 
 Future<Lien?> showAjouterLienDialog(BuildContext context) {
+  final l10n = AppLocalizations.of(context)!;
   final nomController = TextEditingController();
   final urlController = TextEditingController();
   String? erreurUrl;
@@ -10,7 +12,7 @@ Future<Lien?> showAjouterLienDialog(BuildContext context) {
     context: context,
     builder: (ctx) => StatefulBuilder(
       builder: (ctx, setDialogState) => AlertDialog(
-        title: const Text('Ajouter un lien'),
+        title: Text(l10n.lienDialogTitle),
         content: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
@@ -18,8 +20,8 @@ Future<Lien?> showAjouterLienDialog(BuildContext context) {
               controller: nomController,
               textCapitalization: TextCapitalization.sentences,
               decoration: InputDecoration(
-                labelText: 'Nom',
-                hintText: 'ex: Scan VF',
+                labelText: l10n.lienDialogNom,
+                hintText: l10n.lienDialogNomHint,
                 border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
               ),
             ),
@@ -28,8 +30,8 @@ Future<Lien?> showAjouterLienDialog(BuildContext context) {
               controller: urlController,
               keyboardType: TextInputType.url,
               decoration: InputDecoration(
-                labelText: 'URL',
-                hintText: 'https://...',
+                labelText: l10n.lienDialogUrl,
+                hintText: l10n.lienDialogUrlHint,
                 errorText: erreurUrl,
                 border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
               ),
@@ -39,7 +41,7 @@ Future<Lien?> showAjouterLienDialog(BuildContext context) {
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(ctx),
-            child: const Text('Annuler'),
+            child: Text(l10n.commonCancel),
           ),
           FilledButton(
             onPressed: () {
@@ -47,12 +49,12 @@ Future<Lien?> showAjouterLienDialog(BuildContext context) {
               final url = urlController.text.trim();
               if (nom.isEmpty || url.isEmpty) return;
               if (!urlEstValide(url)) {
-                setDialogState(() => erreurUrl = 'URL invalide (http/https requis)');
+                setDialogState(() => erreurUrl = l10n.lienDialogUrlError);
                 return;
               }
               Navigator.pop(ctx, Lien(nom: nom, url: url));
             },
-            child: const Text('Ajouter'),
+            child: Text(l10n.commonAdd),
           ),
         ],
       ),

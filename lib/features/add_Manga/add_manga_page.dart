@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:folio/generated/app_localizations.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:folio/app/providers.dart';
 import 'package:folio/data/database/app_database.dart';
@@ -41,6 +42,56 @@ class _AddMangaPageState extends ConsumerState<AddMangaPage> {
     if (lien != null) setState(() => _liens.add(lien));
   }
 
+  Future<void> _dialogAjouterTag(String titre, Future<void> Function(String) onAdd) async {
+    final l10n = AppLocalizations.of(context)!;
+    final ctrl = TextEditingController();
+    await showDialog(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: Text(titre),
+        content: TextField(
+          controller: ctrl,
+          textCapitalization: TextCapitalization.sentences,
+          autofocus: true,
+          decoration: InputDecoration(
+            border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+          ),
+          onSubmitted: (_) => Navigator.pop(ctx),
+        ),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(ctx), child: Text(l10n.commonCancel)),
+          FilledButton(onPressed: () => Navigator.pop(ctx), child: Text(l10n.commonAdd)),
+        ],
+      ),
+    );
+    final val = ctrl.text.trim();
+    ctrl.dispose();
+    if (val.isNotEmpty) await onAdd(val);
+  }
+
+  Future<void> _supprimerType(String type) async {
+    final l10n = AppLocalizations.of(context)!;
+    final confirme = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: Text(l10n.addCustomDeleteTitle),
+        content: Text(type),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(ctx, false), child: Text(l10n.commonCancel)),
+          TextButton(
+            style: TextButton.styleFrom(foregroundColor: Colors.red),
+            onPressed: () => Navigator.pop(ctx, true),
+            child: Text(l10n.commonDelete),
+          ),
+        ],
+      ),
+    );
+    if (confirme == true) {
+      await ref.read(customTypesProvider.notifier).remove(type);
+      if (_typeSelectionne == type) setState(() => _typeSelectionne = 'Manga');
+    }
+  }
+
   InputDecoration _inputDecoration(String label, {IconData? icon}) {
     return InputDecoration(
       labelText: label,
@@ -51,8 +102,16 @@ class _AddMangaPageState extends ConsumerState<AddMangaPage> {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
+    final statuses = [
+      ('À lire', l10n.statusToRead),
+      ('En cours', l10n.statusReading),
+      ('Terminé', l10n.statusFinished),
+      ('Abandonné', l10n.statusDropped),
+    ];
+
     return Scaffold(
-      appBar: AppBar(title: const Text('Ajouter un manga')),
+      appBar: AppBar(title: Text(l10n.addTitle)),
       body: Form(
         key: _formKey,
         child: SingleChildScrollView(
@@ -64,19 +123,19 @@ class _AddMangaPageState extends ConsumerState<AddMangaPage> {
               TextFormField(
                 controller: _titreController,
                 textCapitalization: TextCapitalization.sentences,
-                decoration: _inputDecoration('Titre du manga', icon: Icons.auto_stories_outlined),
-                validator: (value) => (value == null || value.isEmpty) ? 'Champ requis' : null,
+                decoration: _inputDecoration(l10n.addMangaTitle, icon: Icons.auto_stories_outlined),
+                validator: (value) => (value == null || value.isEmpty) ? l10n.addRequired : null,
               ),
               const SizedBox(height: 16),
 
               TextFormField(
                 keyboardType: const TextInputType.numberWithOptions(decimal: true),
                 controller: _chapitreController,
-                decoration: _inputDecoration('Chapitres lus', icon: Icons.menu_book_outlined),
+                decoration: _inputDecoration(l10n.addChaptersRead, icon: Icons.menu_book_outlined),
                 validator: (value) {
-                  if (value == null || value.isEmpty) return 'Champ requis';
+                  if (value == null || value.isEmpty) return l10n.addRequired;
                   final n = double.tryParse(value.replaceAll(',', '.'));
-                  if (n == null || n < 0) return 'Nombre invalide';
+                  if (n == null || n < 0) return l10n.addInvalidNumber;
                   return null;
                 },
               ),
@@ -85,7 +144,7 @@ class _AddMangaPageState extends ConsumerState<AddMangaPage> {
               Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
-                  const Text('Note', style: TextStyle(fontWeight: FontWeight.w500)),
+                  Text(l10n.addRating, style: const TextStyle(fontWeight: FontWeight.w500)),
                   Container(
                     padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
                     decoration: BoxDecoration(
@@ -111,31 +170,45 @@ class _AddMangaPageState extends ConsumerState<AddMangaPage> {
               ),
               const SizedBox(height: 8),
 
-              const Text('Type', style: TextStyle(fontWeight: FontWeight.w500)),
+              Text(l10n.addType, style: const TextStyle(fontWeight: FontWeight.w500)),
               const SizedBox(height: 8),
               Wrap(
                 spacing: 8,
-                children: ['Manga', 'Manhwa', 'Manhua', 'Novel'].map((type) {
-                  final selected = _typeSelectionne == type;
-                  return ChoiceChip(
-                    label: Text(type),
-                    selected: selected,
-                    onSelected: (_) => setState(() => _typeSelectionne = type),
-                  );
-                }).toList(),
+                runSpacing: 4,
+                children: [
+                  ...['Manga', 'Manhwa', 'Manhua', 'Novel', ...ref.watch(customTypesProvider)].map((type) {
+                    final isCustom = ref.read(customTypesProvider).contains(type);
+                    return GestureDetector(
+                      onLongPress: isCustom ? () => _supprimerType(type) : null,
+                      child: ChoiceChip(
+                        label: Text(type),
+                        selected: _typeSelectionne == type,
+                        onSelected: (_) => setState(() => _typeSelectionne = type),
+                      ),
+                    );
+                  }),
+                  ActionChip(
+                    avatar: const Icon(Icons.add, size: 16),
+                    label: Text(l10n.addCustomType),
+                    onPressed: () => _dialogAjouterTag(
+                      l10n.addCustomType,
+                      ref.read(customTypesProvider.notifier).add,
+                    ),
+                  ),
+                ],
               ),
               const SizedBox(height: 16),
 
-              const Text('Statut', style: TextStyle(fontWeight: FontWeight.w500)),
+              Text(l10n.addStatus, style: const TextStyle(fontWeight: FontWeight.w500)),
               const SizedBox(height: 8),
               Wrap(
                 spacing: 8,
-                children: ['À lire', 'En cours', 'Terminé', 'Abandonné'].map((statut) {
-                  final selected = _statusSelectionne == statut;
+                children: statuses.map<Widget>(((String, String) s) {
+                  final selected = _statusSelectionne == s.$1;
                   return ChoiceChip(
-                    label: Text(statut),
+                    label: Text(s.$2),
                     selected: selected,
-                    onSelected: (_) => setState(() => _statusSelectionne = statut),
+                    onSelected: (_) => setState(() => _statusSelectionne = s.$1),
                   );
                 }).toList(),
               ),
@@ -144,15 +217,15 @@ class _AddMangaPageState extends ConsumerState<AddMangaPage> {
               ExpansionTile(
                 title: Text(
                   _genreSelectionne.isEmpty
-                      ? 'Genres'
-                      : 'Genres (${_genreSelectionne.length})',
+                      ? l10n.addGenres
+                      : l10n.addGenresCount(_genreSelectionne.length),
                 ),
                 tilePadding: EdgeInsets.zero,
                 children: [
                   TextField(
                     controller: _rechercheController,
                     decoration: InputDecoration(
-                      hintText: 'Rechercher un genre...',
+                      hintText: l10n.addSearchGenre,
                       prefixIcon: const Icon(Icons.search),
                       border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
                       isDense: true,
@@ -163,20 +236,35 @@ class _AddMangaPageState extends ConsumerState<AddMangaPage> {
                   Wrap(
                     spacing: 8,
                     runSpacing: 4,
-                    children: tousLesGenres
-                        .where((g) => g.toLowerCase().contains(_rechercheGenre))
-                        .map((genre) => FilterChip(
-                              label: Text(genre),
-                              selected: _genreSelectionne.contains(genre),
-                              onSelected: (selected) {
-                                setState(() {
-                                  selected
-                                      ? _genreSelectionne.add(genre)
-                                      : _genreSelectionne.remove(genre);
-                                });
-                              },
-                            ))
-                        .toList(),
+                    children: [
+                      ...[...tousLesGenres, ...ref.watch(customGenresProvider)]
+                          .where((g) => genreLabel(g, l10n).toLowerCase().contains(_rechercheGenre))
+                          .map((genre) {
+                        final isCustom = ref.read(customGenresProvider).contains(genre);
+                        return FilterChip(
+                          label: Text(genreLabel(genre, l10n)),
+                          selected: _genreSelectionne.contains(genre),
+                          onDeleted: isCustom
+                              ? () => ref.read(customGenresProvider.notifier).remove(genre)
+                              : null,
+                          onSelected: (selected) {
+                            setState(() {
+                              selected
+                                  ? _genreSelectionne.add(genre)
+                                  : _genreSelectionne.remove(genre);
+                            });
+                          },
+                        );
+                      }),
+                      ActionChip(
+                        avatar: const Icon(Icons.add, size: 16),
+                        label: Text(l10n.addCustomGenre),
+                        onPressed: () => _dialogAjouterTag(
+                          l10n.addCustomGenre,
+                          ref.read(customGenresProvider.notifier).add,
+                        ),
+                      ),
+                    ],
                   ),
                   const SizedBox(height: 8),
                 ],
@@ -196,7 +284,7 @@ class _AddMangaPageState extends ConsumerState<AddMangaPage> {
                   ),
                   onPressed: () => setState(() => _estFavori = !_estFavori),
                   icon: Icon(_estFavori ? Icons.favorite : Icons.favorite_border),
-                  label: Text(_estFavori ? 'Dans vos favoris' : 'Ajouter aux favoris'),
+                  label: Text(_estFavori ? l10n.addFavoriteIn : l10n.addFavoriteAdd),
                 ),
               ),
               const SizedBox(height: 24),
@@ -205,13 +293,13 @@ class _AddMangaPageState extends ConsumerState<AddMangaPage> {
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
                   Text(
-                    _liens.isEmpty ? 'Liens d\'accès' : 'Liens d\'accès (${_liens.length})',
+                    _liens.isEmpty ? l10n.addLinks : l10n.addLinksCount(_liens.length),
                     style: const TextStyle(fontWeight: FontWeight.w500),
                   ),
                   TextButton.icon(
                     onPressed: _ajouterLien,
                     icon: const Icon(Icons.add, size: 18),
-                    label: const Text('Ajouter'),
+                    label: Text(l10n.commonAdd),
                   ),
                 ],
               ),
@@ -270,7 +358,7 @@ class _AddMangaPageState extends ConsumerState<AddMangaPage> {
                   }
                 },
                 icon: const Icon(Icons.check),
-                label: const Text('Ajouter'),
+                label: Text(l10n.commonAdd),
               ),
               const SizedBox(height: 16),
             ],

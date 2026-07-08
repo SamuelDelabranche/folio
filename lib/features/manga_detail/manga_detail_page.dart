@@ -2,9 +2,10 @@ import 'dart:io';
 import 'package:drift/drift.dart' hide Column;
 import 'package:flutter/services.dart';
 import 'package:flutter/material.dart';
+import 'package:folio/generated/app_localizations.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:folio/app/providers.dart';
 import 'package:folio/app/constants.dart';
+import 'package:folio/app/providers.dart';
 import 'package:folio/app/theme.dart';
 import 'package:folio/data/database/app_database.dart';
 import 'package:folio/data/database/daos/manga_dao.dart';
@@ -91,8 +92,7 @@ class _MangaDetailPage extends ConsumerState<MangaDetailPage> {
   }
 
   Future<void> _sauvegarder() async {
-    final chapitres =
-        double.tryParse(_chapitresController.text.replaceAll(',', '.'));
+    final chapitres = double.tryParse(_chapitresController.text.replaceAll(',', '.'));
     await _dao.updateMangaByElement(
       widget.mangaData.id,
       MangaTableCompanion(
@@ -111,11 +111,12 @@ class _MangaDetailPage extends ConsumerState<MangaDetailPage> {
   }
 
   void _copierLien(String url) {
+    final l10n = AppLocalizations.of(context)!;
     Clipboard.setData(ClipboardData(text: url));
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
         backgroundColor: AppColors.success,
-        content: const Text('Lien copié', textAlign: TextAlign.center, style: TextStyle(color: Colors.black87)),
+        content: Text(l10n.detailLinkCopied, textAlign: TextAlign.center, style: const TextStyle(color: Colors.black87)),
         duration: const Duration(seconds: 2),
       ),
     );
@@ -124,6 +125,56 @@ class _MangaDetailPage extends ConsumerState<MangaDetailPage> {
   Future<void> _ajouterLien() async {
     final lien = await showAjouterLienDialog(context);
     if (lien != null) setState(() => _liens.add(lien));
+  }
+
+  Future<void> _dialogAjouterTag(String titre, Future<void> Function(String) onAdd) async {
+    final l10n = AppLocalizations.of(context)!;
+    final ctrl = TextEditingController();
+    await showDialog(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: Text(titre),
+        content: TextField(
+          controller: ctrl,
+          textCapitalization: TextCapitalization.sentences,
+          autofocus: true,
+          decoration: InputDecoration(
+            border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+          ),
+          onSubmitted: (_) => Navigator.pop(ctx),
+        ),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(ctx), child: Text(l10n.commonCancel)),
+          FilledButton(onPressed: () => Navigator.pop(ctx), child: Text(l10n.commonAdd)),
+        ],
+      ),
+    );
+    final val = ctrl.text.trim();
+    ctrl.dispose();
+    if (val.isNotEmpty) await onAdd(val);
+  }
+
+  Future<void> _supprimerType(String type) async {
+    final l10n = AppLocalizations.of(context)!;
+    final confirme = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: Text(l10n.addCustomDeleteTitle),
+        content: Text(type),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(ctx, false), child: Text(l10n.commonCancel)),
+          TextButton(
+            style: TextButton.styleFrom(foregroundColor: Colors.red),
+            onPressed: () => Navigator.pop(ctx, true),
+            child: Text(l10n.commonDelete),
+          ),
+        ],
+      ),
+    );
+    if (confirme == true) {
+      await ref.read(customTypesProvider.notifier).remove(type);
+      if (_typeController == type) setState(() => _typeController = 'Manga');
+    }
   }
 
   Future<void> _setToggleSync(MangaTableCompanion companion) =>
@@ -141,6 +192,7 @@ class _MangaDetailPage extends ConsumerState<MangaDetailPage> {
   }
 
   Future<void> _synchroniserMaintenant() async {
+    final l10n = AppLocalizations.of(context)!;
     final messenger = ScaffoldMessenger.of(context);
     setState(() => _syncEnCours = true);
     try {
@@ -151,7 +203,7 @@ class _MangaDetailPage extends ConsumerState<MangaDetailPage> {
         if (!lie) {
           messenger.showSnackBar(SnackBar(
             backgroundColor: AppColors.info,
-            content: const Text('Aucune fiche AniList trouvée pour ce titre', textAlign: TextAlign.center, style: TextStyle(color: Colors.black87)),
+            content: Text(l10n.detailSyncNoMatch, textAlign: TextAlign.center, style: const TextStyle(color: Colors.black87)),
           ));
           return;
         }
@@ -172,17 +224,17 @@ class _MangaDetailPage extends ConsumerState<MangaDetailPage> {
       });
       messenger.showSnackBar(SnackBar(
         backgroundColor: AppColors.success,
-        content: const Text('Fiche synchronisée', textAlign: TextAlign.center, style: TextStyle(color: Colors.black87)),
+        content: Text(l10n.detailSyncSuccess, textAlign: TextAlign.center, style: const TextStyle(color: Colors.black87)),
       ));
     } on AnilistRateLimitException catch (e) {
       messenger.showSnackBar(SnackBar(
         backgroundColor: AppColors.info,
-        content: Text('AniList est saturé — réessaie dans ${e.retryAfter.inSeconds} s', textAlign: TextAlign.center, style: const TextStyle(color: Colors.black87)),
+        content: Text(AppLocalizations.of(context)!.detailSyncRateLimit(e.retryAfter.inSeconds), textAlign: TextAlign.center, style: const TextStyle(color: Colors.black87)),
       ));
     } catch (_) {
       messenger.showSnackBar(SnackBar(
         backgroundColor: AppColors.danger,
-        content: const Text('Synchronisation impossible. Vérifie ta connexion.', textAlign: TextAlign.center, style: TextStyle(color: Colors.white)),
+        content: Text(AppLocalizations.of(context)!.detailSyncError, textAlign: TextAlign.center, style: const TextStyle(color: Colors.white)),
       ));
     } finally {
       if (mounted) setState(() => _syncEnCours = false);
@@ -214,6 +266,7 @@ class _MangaDetailPage extends ConsumerState<MangaDetailPage> {
   }
 
   void _ouvrirMenuImage() {
+    final l10n = AppLocalizations.of(context)!;
     showModalBottomSheet(
       context: context,
       shape: const RoundedRectangleBorder(
@@ -226,8 +279,8 @@ class _MangaDetailPage extends ConsumerState<MangaDetailPage> {
             const SizedBox(height: 12),
             ListTile(
               leading: const Icon(Icons.photo_library_outlined),
-              title: const Text('Importer une image'),
-              subtitle: const Text('Choisir depuis la galerie'),
+              title: Text(l10n.detailImageImport),
+              subtitle: Text(l10n.detailImageGallery),
               onTap: () {
                 Navigator.pop(sheetContext);
                 _importerImage();
@@ -236,7 +289,7 @@ class _MangaDetailPage extends ConsumerState<MangaDetailPage> {
             if (_imagePath != null)
               ListTile(
                 leading: Icon(Icons.delete_outline, color: AppColors.danger),
-                title: Text('Supprimer l\'image', style: TextStyle(color: AppColors.danger)),
+                title: Text(l10n.detailImageDelete, style: TextStyle(color: AppColors.danger)),
                 onTap: () {
                   Navigator.pop(sheetContext);
                   _supprimerImage();
@@ -250,6 +303,7 @@ class _MangaDetailPage extends ConsumerState<MangaDetailPage> {
   }
 
   Future<void> _importerImage() async {
+    final l10n = AppLocalizations.of(context)!;
     final messenger = ScaffoldMessenger.of(context);
     try {
       final fichier = await ImagePicker().pickImage(source: ImageSource.gallery);
@@ -259,10 +313,7 @@ class _MangaDetailPage extends ConsumerState<MangaDetailPage> {
         throw const CoverInvalideException('Image trop volumineuse (max 10 Mo)');
       }
       final octets = await fichier.readAsBytes();
-      final chemin = await CoverService.installerCover(
-        octets,
-        'cover_${widget.mangaData.id}.jpg',
-      );
+      final chemin = await CoverService.installerCover(octets, 'cover_${widget.mangaData.id}.jpg');
       if (_imagePath != null && _imagePath != chemin) {
         await CoverService.supprimerCover(_imagePath);
       }
@@ -284,11 +335,7 @@ class _MangaDetailPage extends ConsumerState<MangaDetailPage> {
       FileImage(File(chemin)).evict();
       messenger.showSnackBar(SnackBar(
         backgroundColor: AppColors.info,
-        content: const Text(
-          'Image personnalisée — la synchro de la cover est désactivée pour ce manga',
-          textAlign: TextAlign.center,
-          style: TextStyle(color: Colors.black87),
-        ),
+        content: Text(l10n.detailImageCustomInfo, textAlign: TextAlign.center, style: const TextStyle(color: Colors.black87)),
       ));
     } on CoverInvalideException catch (e) {
       messenger.showSnackBar(SnackBar(
@@ -298,7 +345,7 @@ class _MangaDetailPage extends ConsumerState<MangaDetailPage> {
     } catch (_) {
       messenger.showSnackBar(SnackBar(
         backgroundColor: AppColors.danger,
-        content: const Text("Impossible d'importer cette image", textAlign: TextAlign.center, style: TextStyle(color: Colors.white)),
+        content: Text(AppLocalizations.of(context)!.detailImageError, textAlign: TextAlign.center, style: const TextStyle(color: Colors.white)),
       ));
     }
   }
@@ -307,10 +354,7 @@ class _MangaDetailPage extends ConsumerState<MangaDetailPage> {
     await CoverService.supprimerCover(_imagePath);
     await _dao.updateMangaByElement(
       widget.mangaData.id,
-      const MangaTableCompanion(
-        imagePath: Value(null),
-        imageSource: Value('aucune'),
-      ),
+      const MangaTableCompanion(imagePath: Value(null), imageSource: Value('aucune')),
     );
     if (!mounted) return;
     setState(() {
@@ -326,6 +370,14 @@ class _MangaDetailPage extends ConsumerState<MangaDetailPage> {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
+    final statuses = [
+      ('À lire', l10n.statusToRead),
+      ('En cours', l10n.statusReading),
+      ('Terminé', l10n.statusFinished),
+      ('Abandonné', l10n.statusDropped),
+    ];
+
     return PopScope(
       canPop: false,
       onPopInvokedWithResult: (didPop, result) async {
@@ -340,13 +392,9 @@ class _MangaDetailPage extends ConsumerState<MangaDetailPage> {
           actions: [
             IconButton(
               onPressed: _syncEnCours ? null : _synchroniserMaintenant,
-              tooltip: 'Synchroniser',
+              tooltip: l10n.detailSyncNow,
               icon: _syncEnCours
-                  ? const SizedBox(
-                      width: 18,
-                      height: 18,
-                      child: CircularProgressIndicator(strokeWidth: 2),
-                    )
+                  ? const SizedBox(width: 18, height: 18, child: CircularProgressIndicator(strokeWidth: 2))
                   : const Icon(Icons.sync),
             ),
             IconButton(
@@ -357,10 +405,7 @@ class _MangaDetailPage extends ConsumerState<MangaDetailPage> {
                   MangaTableCompanion(estFavori: Value(_estFavori)),
                 );
               },
-              icon: Icon(
-                _estFavori ? Icons.favorite : Icons.favorite_border,
-                color: Colors.red,
-              ),
+              icon: Icon(_estFavori ? Icons.favorite : Icons.favorite_border, color: Colors.red),
             ),
             IconButton(
               onPressed: () async {
@@ -384,15 +429,12 @@ class _MangaDetailPage extends ConsumerState<MangaDetailPage> {
                   context: context,
                   builder: (dialogContext) => AlertDialog(
                     icon: Icon(Icons.warning_amber_rounded, color: AppColors.danger, size: 48),
-                    title: Text('Attention !', style: TextStyle(color: AppColors.danger)),
-                    content: const Text(
-                      'Cette action est irréversible.\nLe manga sera définitivement supprimé.',
-                      textAlign: TextAlign.center,
-                    ),
+                    title: Text(l10n.commonWarning, style: TextStyle(color: AppColors.danger)),
+                    content: Text(l10n.detailDeleteContent, textAlign: TextAlign.center),
                     actions: [
                       TextButton(
                         onPressed: () => Navigator.pop(dialogContext),
-                        child: const Text('Annuler'),
+                        child: Text(l10n.commonCancel),
                       ),
                       TextButton(
                         style: TextButton.styleFrom(foregroundColor: AppColors.danger),
@@ -401,11 +443,11 @@ class _MangaDetailPage extends ConsumerState<MangaDetailPage> {
                           await _dao.deleteManga(widget.mangaData.id);
                           messenger.showSnackBar(SnackBar(
                             backgroundColor: AppColors.success,
-                            content: const Text('Manga supprimé', textAlign: TextAlign.center, style: TextStyle(color: Colors.black87)),
+                            content: Text(l10n.detailDeleteSuccess, textAlign: TextAlign.center, style: const TextStyle(color: Colors.black87)),
                           ));
                           if (mounted) { nav.pop(); nav.pop(); }
                         },
-                        child: Text('Supprimer', style: TextStyle(color: AppColors.danger)),
+                        child: Text(l10n.commonDelete, style: TextStyle(color: AppColors.danger)),
                       ),
                     ],
                   ),
@@ -500,7 +542,7 @@ class _MangaDetailPage extends ConsumerState<MangaDetailPage> {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
 
-                    _SectionLabel('Description'),
+                    _SectionLabel(l10n.detailDescription),
                     _modeEdition
                         ? TextField(
                             controller: _descriptionController,
@@ -514,7 +556,7 @@ class _MangaDetailPage extends ConsumerState<MangaDetailPage> {
                             child: Padding(
                               padding: const EdgeInsets.all(16),
                               child: Text(
-                                _descriptionController.text.isEmpty ? 'Aucune description' : _descriptionController.text,
+                                _descriptionController.text.isEmpty ? l10n.detailNoDescription : _descriptionController.text,
                                 textAlign: TextAlign.justify,
                                 style: const TextStyle(height: 1.5),
                               ),
@@ -522,16 +564,16 @@ class _MangaDetailPage extends ConsumerState<MangaDetailPage> {
                           ),
                     const SizedBox(height: 20),
 
-                    _SectionLabel('Genres'),
+                    _SectionLabel(l10n.detailGenres),
                     _modeEdition
                         ? ExpansionTile(
                             tilePadding: EdgeInsets.zero,
-                            title: Text('${_genreSelectionne.length} sélectionné(s)'),
+                            title: Text(l10n.detailSelectedCount(_genreSelectionne.length)),
                             children: [
                               TextField(
                                 controller: _rechercheController,
                                 decoration: InputDecoration(
-                                  hintText: 'Rechercher un genre...',
+                                  hintText: l10n.detailSearchGenre,
                                   prefixIcon: const Icon(Icons.search),
                                   border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
                                   isDense: true,
@@ -542,18 +584,33 @@ class _MangaDetailPage extends ConsumerState<MangaDetailPage> {
                               Wrap(
                                 spacing: 8,
                                 runSpacing: 4,
-                                children: tousLesGenres
-                                    .where((g) => g.toLowerCase().contains(_rechercheGenre))
-                                    .map((genre) => FilterChip(
-                                          label: Text(genre),
-                                          selected: _genreSelectionne.contains(genre),
-                                          onSelected: (selected) {
-                                            setState(() {
-                                              selected ? _genreSelectionne.add(genre) : _genreSelectionne.remove(genre);
-                                            });
-                                          },
-                                        ))
-                                    .toList(),
+                                children: [
+                                  ...[...tousLesGenres, ...ref.watch(customGenresProvider)]
+                                      .where((g) => genreLabel(g, l10n).toLowerCase().contains(_rechercheGenre))
+                                      .map((genre) {
+                                    final isCustom = ref.read(customGenresProvider).contains(genre);
+                                    return FilterChip(
+                                      label: Text(genreLabel(genre, l10n)),
+                                      selected: _genreSelectionne.contains(genre),
+                                      onDeleted: isCustom
+                                          ? () => ref.read(customGenresProvider.notifier).remove(genre)
+                                          : null,
+                                      onSelected: (selected) {
+                                        setState(() {
+                                          selected ? _genreSelectionne.add(genre) : _genreSelectionne.remove(genre);
+                                        });
+                                      },
+                                    );
+                                  }),
+                                  ActionChip(
+                                    avatar: const Icon(Icons.add, size: 16),
+                                    label: Text(l10n.addCustomGenre),
+                                    onPressed: () => _dialogAjouterTag(
+                                      l10n.addCustomGenre,
+                                      ref.read(customGenresProvider.notifier).add,
+                                    ),
+                                  ),
+                                ],
                               ),
                               const SizedBox(height: 8),
                             ],
@@ -561,42 +618,59 @@ class _MangaDetailPage extends ConsumerState<MangaDetailPage> {
                         : _genreSelectionne.isEmpty
                             ? Card(
                                 margin: EdgeInsets.zero,
-                                child: const Padding(
-                                  padding: EdgeInsets.all(16),
-                                  child: Center(child: Text('Aucun genre renseigné')),
+                                child: Padding(
+                                  padding: const EdgeInsets.all(16),
+                                  child: Center(child: Text(l10n.detailNoGenre)),
                                 ),
                               )
                             : Wrap(
                                 spacing: 8,
                                 runSpacing: 4,
-                                children: _genreSelectionne.map((g) => Chip(label: Text(g))).toList(),
+                                children: _genreSelectionne.map((g) => Chip(label: Text(genreLabel(g, l10n)))).toList(),
                               ),
                     const SizedBox(height: 20),
 
-                    _SectionLabel('Informations'),
+                    _SectionLabel(l10n.detailInfo),
                     _modeEdition
                         ? Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
-                              const Text('Type', style: TextStyle(fontWeight: FontWeight.w500)),
+                              Text(l10n.detailType, style: const TextStyle(fontWeight: FontWeight.w500)),
                               const SizedBox(height: 8),
                               Wrap(
                                 spacing: 8,
-                                children: ['Manga', 'Manhwa', 'Manhua', 'Novel'].map((type) => ChoiceChip(
-                                      label: Text(type),
-                                      selected: _typeController == type,
-                                      onSelected: (_) => setState(() => _typeController = type),
-                                    )).toList(),
+                                runSpacing: 4,
+                                children: [
+                                  ...['Manga', 'Manhwa', 'Manhua', 'Novel', ...ref.watch(customTypesProvider)].map((type) {
+                                    final isCustom = ref.read(customTypesProvider).contains(type);
+                                    return GestureDetector(
+                                      onLongPress: isCustom ? () => _supprimerType(type) : null,
+                                      child: ChoiceChip(
+                                        label: Text(type),
+                                        selected: _typeController == type,
+                                        onSelected: (_) => setState(() => _typeController = type),
+                                      ),
+                                    );
+                                  }),
+                                  ActionChip(
+                                    avatar: const Icon(Icons.add, size: 16),
+                                    label: Text(l10n.addCustomType),
+                                    onPressed: () => _dialogAjouterTag(
+                                      l10n.addCustomType,
+                                      ref.read(customTypesProvider.notifier).add,
+                                    ),
+                                  ),
+                                ],
                               ),
                               const SizedBox(height: 16),
-                              const Text('Statut', style: TextStyle(fontWeight: FontWeight.w500)),
+                              Text(l10n.detailStatus, style: const TextStyle(fontWeight: FontWeight.w500)),
                               const SizedBox(height: 8),
                               Wrap(
                                 spacing: 8,
-                                children: ['À lire', 'En cours', 'Terminé', 'Abandonné'].map((statut) => ChoiceChip(
-                                      label: Text(statut),
-                                      selected: _statutController == statut,
-                                      onSelected: (_) => setState(() => _statutController = statut),
+                                children: statuses.map<Widget>(((String, String) s) => ChoiceChip(
+                                      label: Text(s.$2),
+                                      selected: _statutController == s.$1,
+                                      onSelected: (_) => setState(() => _statutController = s.$1),
                                     )).toList(),
                               ),
                               const SizedBox(height: 16),
@@ -604,7 +678,7 @@ class _MangaDetailPage extends ConsumerState<MangaDetailPage> {
                                 keyboardType: const TextInputType.numberWithOptions(decimal: true),
                                 controller: _chapitresController,
                                 decoration: InputDecoration(
-                                  labelText: 'Chapitres lus',
+                                  labelText: l10n.detailChaptersRead,
                                   prefixIcon: const Icon(Icons.menu_book_outlined),
                                   border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
                                 ),
@@ -613,7 +687,7 @@ class _MangaDetailPage extends ConsumerState<MangaDetailPage> {
                               Row(
                                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                                 children: [
-                                  const Text('Note', style: TextStyle(fontWeight: FontWeight.w500)),
+                                  Text(l10n.detailRating, style: const TextStyle(fontWeight: FontWeight.w500)),
                                   Container(
                                     padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
                                     decoration: BoxDecoration(
@@ -642,25 +716,25 @@ class _MangaDetailPage extends ConsumerState<MangaDetailPage> {
                               children: [
                                 ListTile(
                                   leading: const Icon(Icons.category_outlined),
-                                  title: const Text('Type'),
+                                  title: Text(l10n.detailType),
                                   trailing: Text(_typeController, style: const TextStyle(color: Colors.grey)),
                                 ),
                                 const Divider(height: 1, indent: 56),
                                 ListTile(
                                   leading: const Icon(Icons.bookmark_outline),
-                                  title: const Text('Statut'),
-                                  trailing: Text(_statutController, style: const TextStyle(color: Colors.grey)),
+                                  title: Text(l10n.detailStatus),
+                                  trailing: Text(statusLabel(_statutController, l10n), style: const TextStyle(color: Colors.grey)),
                                 ),
                                 const Divider(height: 1, indent: 56),
                                 ListTile(
                                   leading: const Icon(Icons.menu_book_outlined),
-                                  title: const Text('Chapitres lus'),
+                                  title: Text(l10n.detailChaptersRead),
                                   trailing: Text(_chapitresController.text, style: const TextStyle(color: Colors.grey)),
                                 ),
                                 const Divider(height: 1, indent: 56),
                                 ListTile(
                                   leading: const Icon(Icons.star_outline),
-                                  title: const Text('Note'),
+                                  title: Text(l10n.detailRating),
                                   trailing: Container(
                                     padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
                                     decoration: BoxDecoration(
@@ -678,7 +752,7 @@ class _MangaDetailPage extends ConsumerState<MangaDetailPage> {
                           ),
                     const SizedBox(height: 20),
 
-                    _SectionLabel('Liens d\'accès'),
+                    _SectionLabel(l10n.detailLinks),
                     _modeEdition
                         ? Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
@@ -740,7 +814,7 @@ class _MangaDetailPage extends ConsumerState<MangaDetailPage> {
                               OutlinedButton.icon(
                                 onPressed: _ajouterLien,
                                 icon: const Icon(Icons.add),
-                                label: const Text('Ajouter un lien'),
+                                label: Text(l10n.detailAddLink),
                                 style: OutlinedButton.styleFrom(
                                   minimumSize: const Size(double.infinity, 44),
                                   shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
@@ -751,9 +825,9 @@ class _MangaDetailPage extends ConsumerState<MangaDetailPage> {
                         : _liens.isEmpty
                             ? Card(
                                 margin: EdgeInsets.zero,
-                                child: const Padding(
-                                  padding: EdgeInsets.all(16),
-                                  child: Center(child: Text('Aucun lien renseigné')),
+                                child: Padding(
+                                  padding: const EdgeInsets.all(16),
+                                  child: Center(child: Text(l10n.detailNoLink)),
                                 ),
                               )
                             : Column(
@@ -801,103 +875,89 @@ class _MangaDetailPage extends ConsumerState<MangaDetailPage> {
                     const SizedBox(height: 20),
 
                     if (_modeEdition) ...[
-                    _SectionLabel('Synchronisation AniList'),
-                    Card(
-                      margin: EdgeInsets.zero,
-                      child: Consumer(
-                        builder: (context, ref, _) {
-                          final prefs = ref.watch(syncPrefsProvider);
-                          return Column(
-                            children: [
-                              ListTile(
-                                leading: Icon(
-                                  _anilistId != null
-                                      ? Icons.cloud_done_outlined
-                                      : Icons.cloud_off_outlined,
-                                  color: _anilistId != null
-                                      ? AppColors.success
-                                      : Colors.grey,
-                                ),
-                                title: Text(_anilistId != null
-                                    ? 'Lié à AniList (#$_anilistId)'
-                                    : 'Non lié à AniList'),
-                                subtitle: Text(_lastSyncedAt != null
-                                    ? 'Dernière synchro : ${_formatDate(_lastSyncedAt!)}'
-                                    : 'Jamais synchronisé'),
-                                trailing: TextButton(
-                                  onPressed: _anilistId != null ? _delier : _lier,
-                                  child: Text(_anilistId != null ? 'Délier' : 'Lier'),
-                                ),
-                              ),
-                              if (_anilistId != null)
-                                Padding(
-                                  padding: const EdgeInsets.fromLTRB(16, 0, 16, 8),
-                                  child: SizedBox(
-                                    width: double.infinity,
-                                    child: FilledButton.tonalIcon(
-                                      onPressed: _syncEnCours || !prefs.maitre
-                                          ? null
-                                          : _synchroniserMaintenant,
-                                      icon: _syncEnCours
-                                          ? const SizedBox(
-                                              width: 16,
-                                              height: 16,
-                                              child: CircularProgressIndicator(strokeWidth: 2),
-                                            )
-                                          : const Icon(Icons.sync, size: 18),
-                                      label: Text(_syncEnCours
-                                          ? 'Synchronisation…'
-                                          : 'Synchroniser maintenant'),
-                                    ),
+                      _SectionLabel(l10n.detailSyncSection),
+                      Card(
+                        margin: EdgeInsets.zero,
+                        child: Consumer(
+                          builder: (context, ref, _) {
+                            final prefs = ref.watch(syncPrefsProvider);
+                            return Column(
+                              children: [
+                                ListTile(
+                                  leading: Icon(
+                                    _anilistId != null ? Icons.cloud_done_outlined : Icons.cloud_off_outlined,
+                                    color: _anilistId != null ? AppColors.success : Colors.grey,
+                                  ),
+                                  title: Text(_anilistId != null
+                                      ? l10n.detailLinked(_anilistId!)
+                                      : l10n.detailNotLinked),
+                                  subtitle: Text(_lastSyncedAt != null
+                                      ? l10n.detailLastSync(_formatDate(_lastSyncedAt!))
+                                      : l10n.detailNeverSynced),
+                                  trailing: TextButton(
+                                    onPressed: _anilistId != null ? _delier : _lier,
+                                    child: Text(_anilistId != null ? l10n.detailUnlink : l10n.detailLink),
                                   ),
                                 ),
-                              const Divider(height: 1, indent: 56),
-                              _SyncToggleFiche(
-                                label: 'Image de couverture',
-                                value: _syncImage,
-                                globalActif: prefs.maitre && prefs.image,
-                                note: _imageSource == 'utilisateur'
-                                    ? 'Image personnalisée — jamais écrasée par la synchro'
-                                    : null,
-                                onChanged: (v) {
-                                  setState(() => _syncImage = v);
-                                  _setToggleSync(MangaTableCompanion(syncImage: Value(v)));
-                                },
-                              ),
-                              _SyncToggleFiche(
-                                label: 'Description',
-                                value: _syncDescription,
-                                globalActif: prefs.maitre && prefs.description,
-                                onChanged: (v) {
-                                  setState(() => _syncDescription = v);
-                                  _setToggleSync(MangaTableCompanion(syncDescription: Value(v)));
-                                },
-                              ),
-                              _SyncToggleFiche(
-                                label: 'Genres',
-                                value: _syncGenres,
-                                globalActif: prefs.maitre && prefs.genres,
-                                onChanged: (v) {
-                                  setState(() => _syncGenres = v);
-                                  _setToggleSync(MangaTableCompanion(syncGenres: Value(v)));
-                                },
-                              ),
-                              _SyncToggleFiche(
-                                label: 'Type',
-                                value: _syncType,
-                                globalActif: prefs.maitre && prefs.type,
-                                onChanged: (v) {
-                                  setState(() => _syncType = v);
-                                  _setToggleSync(MangaTableCompanion(syncType: Value(v)));
-                                },
-                              ),
-                              const SizedBox(height: 4),
-                            ],
-                          );
-                        },
+                                if (_anilistId != null)
+                                  Padding(
+                                    padding: const EdgeInsets.fromLTRB(16, 0, 16, 8),
+                                    child: SizedBox(
+                                      width: double.infinity,
+                                      child: FilledButton.tonalIcon(
+                                        onPressed: _syncEnCours || !prefs.maitre ? null : _synchroniserMaintenant,
+                                        icon: _syncEnCours
+                                            ? const SizedBox(width: 16, height: 16, child: CircularProgressIndicator(strokeWidth: 2))
+                                            : const Icon(Icons.sync, size: 18),
+                                        label: Text(_syncEnCours ? l10n.detailSyncing : l10n.detailSyncNow),
+                                      ),
+                                    ),
+                                  ),
+                                const Divider(height: 1, indent: 56),
+                                _SyncToggleFiche(
+                                  label: l10n.detailSyncCover,
+                                  value: _syncImage,
+                                  globalActif: prefs.maitre && prefs.image,
+                                  note: _imageSource == 'utilisateur' ? l10n.detailSyncCoverCustom : null,
+                                  onChanged: (v) {
+                                    setState(() => _syncImage = v);
+                                    _setToggleSync(MangaTableCompanion(syncImage: Value(v)));
+                                  },
+                                ),
+                                _SyncToggleFiche(
+                                  label: l10n.detailSyncDescription,
+                                  value: _syncDescription,
+                                  globalActif: prefs.maitre && prefs.description,
+                                  onChanged: (v) {
+                                    setState(() => _syncDescription = v);
+                                    _setToggleSync(MangaTableCompanion(syncDescription: Value(v)));
+                                  },
+                                ),
+                                _SyncToggleFiche(
+                                  label: l10n.detailSyncGenres,
+                                  value: _syncGenres,
+                                  globalActif: prefs.maitre && prefs.genres,
+                                  onChanged: (v) {
+                                    setState(() => _syncGenres = v);
+                                    _setToggleSync(MangaTableCompanion(syncGenres: Value(v)));
+                                  },
+                                ),
+                                _SyncToggleFiche(
+                                  label: l10n.detailSyncType,
+                                  value: _syncType,
+                                  globalActif: prefs.maitre && prefs.type,
+                                  onChanged: (v) {
+                                    setState(() => _syncType = v);
+                                    _setToggleSync(MangaTableCompanion(syncType: Value(v)));
+                                  },
+                                ),
+                                const SizedBox(height: 4),
+                              ],
+                            );
+                          },
+                        ),
                       ),
-                    ),
-                    const SizedBox(height: 24),
+                      const SizedBox(height: 24),
                     ],
                   ],
                 ),
@@ -927,14 +987,13 @@ class _SyncToggleFiche extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final sousTitre = !globalActif ? 'Désactivé globalement (Paramètres)' : note;
+    final l10n = AppLocalizations.of(context)!;
+    final sousTitre = !globalActif ? l10n.detailSyncGlobalOff : note;
     return SwitchListTile(
       dense: true,
       contentPadding: const EdgeInsets.only(left: 56, right: 16),
       title: Text(label, style: const TextStyle(fontSize: 14)),
-      subtitle: sousTitre == null
-          ? null
-          : Text(sousTitre, style: const TextStyle(fontSize: 11)),
+      subtitle: sousTitre == null ? null : Text(sousTitre, style: const TextStyle(fontSize: 11)),
       value: value,
       onChanged: globalActif ? onChanged : null,
     );

@@ -1,6 +1,8 @@
 import 'dart:io';
 
 import 'package:flutter/material.dart';
+import 'package:folio/generated/app_localizations.dart';
+import 'package:folio/app/constants.dart';
 import 'package:folio/app/theme.dart';
 import 'package:folio/data/database/app_database.dart';
 
@@ -14,6 +16,7 @@ class MangaListTile extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
     final couleurStatut = AppColors.couleurStatut(mangaData.status);
     final pastel = AppColors.pastels[mangaData.id % AppColors.pastels.length];
 
@@ -73,7 +76,7 @@ class MangaListTile extends StatelessWidget {
                           borderRadius: BorderRadius.circular(8),
                         ),
                         child: Text(
-                          mangaData.status,
+                          statusLabel(mangaData.status, l10n),
                           style: TextStyle(
                             fontSize: 10,
                             fontWeight: FontWeight.bold,

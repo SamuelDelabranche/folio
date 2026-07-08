@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import 'package:flutter/material.dart';
+import 'package:folio/generated/app_localizations.dart';
 import 'package:folio/app/theme.dart';
 import 'package:folio/services/anilist/anilist_client.dart';
 import 'package:folio/services/anilist/anilist_models.dart';
@@ -57,6 +58,7 @@ class _LierAnilistSheetState extends State<_LierAnilistSheet> {
   }
 
   Future<void> _rechercher() async {
+    final l10n = AppLocalizations.of(context)!;
     final titre = _controller.text.trim();
     if (titre.isEmpty) return;
     setState(() {
@@ -74,19 +76,20 @@ class _LierAnilistSheetState extends State<_LierAnilistSheet> {
       if (!mounted) return;
       setState(() {
         _chargement = false;
-        _erreur = 'Trop de requêtes — réessaie dans ${e.retryAfter.inSeconds} s';
+        _erreur = l10n.anilistSheetRateLimit(e.retryAfter.inSeconds);
       });
     } catch (_) {
       if (!mounted) return;
       setState(() {
         _chargement = false;
-        _erreur = 'Recherche impossible. Vérifie ta connexion.';
+        _erreur = AppLocalizations.of(context)!.anilistSheetNetworkError;
       });
     }
   }
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
     return Padding(
       padding: EdgeInsets.only(bottom: MediaQuery.of(context).viewInsets.bottom),
       child: SizedBox(
@@ -102,9 +105,9 @@ class _LierAnilistSheetState extends State<_LierAnilistSheet> {
                 borderRadius: BorderRadius.circular(2),
               ),
             ),
-            const Text(
-              'Lier à AniList',
-              style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+            Text(
+              l10n.anilistSheetTitle,
+              style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
             ),
             Padding(
               padding: const EdgeInsets.fromLTRB(16, 16, 16, 8),
@@ -114,7 +117,7 @@ class _LierAnilistSheetState extends State<_LierAnilistSheet> {
                 onSubmitted: (_) => _rechercher(),
                 textInputAction: TextInputAction.search,
                 decoration: InputDecoration(
-                  hintText: 'Titre du manga…',
+                  hintText: l10n.anilistSheetHint,
                   prefixIcon: const Icon(Icons.search),
                   suffixIcon: IconButton(
                     icon: const Icon(Icons.arrow_forward),
@@ -125,13 +128,13 @@ class _LierAnilistSheetState extends State<_LierAnilistSheet> {
                 ),
               ),
             ),
-            Expanded(child: _buildContenu()),
+            Expanded(child: _buildContenu(l10n)),
             SafeArea(
               top: false,
               child: Padding(
                 padding: const EdgeInsets.all(8),
                 child: Text(
-                  'Données fournies par AniList',
+                  l10n.anilistSheetPoweredBy,
                   style: TextStyle(fontSize: 11, color: Colors.grey.shade500),
                 ),
               ),
@@ -142,7 +145,7 @@ class _LierAnilistSheetState extends State<_LierAnilistSheet> {
     );
   }
 
-  Widget _buildContenu() {
+  Widget _buildContenu(AppLocalizations l10n) {
     if (_chargement) {
       return const Center(child: CircularProgressIndicator());
     }
@@ -155,14 +158,14 @@ class _LierAnilistSheetState extends State<_LierAnilistSheet> {
             const SizedBox(height: 12),
             Text(_erreur!, textAlign: TextAlign.center),
             const SizedBox(height: 12),
-            OutlinedButton(onPressed: _rechercher, child: const Text('Réessayer')),
+            OutlinedButton(onPressed: _rechercher, child: Text(l10n.anilistSheetRetry)),
           ],
         ),
       );
     }
     if (_resultats.isEmpty) {
       return Center(
-        child: Text('Aucun résultat', style: TextStyle(color: Colors.grey.shade500)),
+        child: Text(l10n.anilistSheetNoResult, style: TextStyle(color: Colors.grey.shade500)),
       );
     }
     return ListView.separated(

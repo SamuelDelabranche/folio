@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:folio/generated/app_localizations.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:folio/app/providers.dart';
 import 'package:folio/app/theme.dart';
@@ -50,6 +51,7 @@ class _LibraryPage extends ConsumerState<LibraryPage> {
   }
 
   void _showFiltres() {
+    final l10n = AppLocalizations.of(context)!;
     FocusScope.of(context).unfocus();
     showModalBottomSheet(
       context: context,
@@ -59,6 +61,12 @@ class _LibraryPage extends ConsumerState<LibraryPage> {
       ),
       builder: (ctx) => StatefulBuilder(
         builder: (ctx, setModalState) {
+          final statuses = [
+            ('À lire', l10n.statusToRead),
+            ('En cours', l10n.statusReading),
+            ('Terminé', l10n.statusFinished),
+            ('Abandonné', l10n.statusDropped),
+          ];
           return SizedBox(
             height: MediaQuery.of(ctx).size.height * 0.6,
             width: double.infinity,
@@ -81,9 +89,9 @@ class _LibraryPage extends ConsumerState<LibraryPage> {
                   child: Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
-                      const Text(
-                        'Filtres & Tri',
-                        style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                      Text(
+                        l10n.libFilterTitle,
+                        style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
                       ),
                       TextButton(
                         onPressed: () {
@@ -97,7 +105,7 @@ class _LibraryPage extends ConsumerState<LibraryPage> {
                           });
                           setModalState(() {});
                         },
-                        child: const Text('Réinitialiser'),
+                        child: Text(l10n.libFilterReset),
                       ),
                     ],
                   ),
@@ -110,13 +118,13 @@ class _LibraryPage extends ConsumerState<LibraryPage> {
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         _FiltreSection(
-                          titre: 'Trier par',
+                          titre: l10n.libFilterSortBy,
                           child: Wrap(
                             spacing: 8,
                             runSpacing: 4,
                             children: [
                               _TriCycleChip(
-                                baseLabel: 'Alphabétique',
+                                baseLabel: l10n.libFilterAlpha,
                                 option1: TriOption.titreAZ,
                                 label1: '↓',
                                 option2: TriOption.titreZA,
@@ -125,7 +133,7 @@ class _LibraryPage extends ConsumerState<LibraryPage> {
                                 onTap: (v) { setState(() => _tri = v); setModalState(() {}); },
                               ),
                               _TriCycleChip(
-                                baseLabel: 'Note',
+                                baseLabel: l10n.libFilterRating,
                                 option1: TriOption.meilleureNote,
                                 label1: '↓',
                                 option2: TriOption.moinsNote,
@@ -134,7 +142,7 @@ class _LibraryPage extends ConsumerState<LibraryPage> {
                                 onTap: (v) { setState(() => _tri = v); setModalState(() {}); },
                               ),
                               _TriCycleChip(
-                                baseLabel: 'Chapitres',
+                                baseLabel: l10n.libFilterChapters,
                                 option1: TriOption.plusChapitres,
                                 label1: '↓',
                                 option2: TriOption.moinsChapitres,
@@ -147,16 +155,16 @@ class _LibraryPage extends ConsumerState<LibraryPage> {
                         ),
                         const SizedBox(height: 20),
                         _FiltreSection(
-                          titre: 'Statut',
+                          titre: l10n.libFilterStatus,
                           child: Wrap(
                             spacing: 8,
                             runSpacing: 4,
-                            children: ['À lire', 'En cours', 'Terminé', 'Abandonné'].map((s) {
+                            children: statuses.map<Widget>(((String, String) s) {
                               return FilterChip(
-                                label: Text(s),
-                                selected: _filtreStatus == s,
+                                label: Text(s.$2),
+                                selected: _filtreStatus == s.$1,
                                 onSelected: (v) {
-                                  setState(() => _filtreStatus = v ? s : null);
+                                  setState(() => _filtreStatus = v ? s.$1 : null);
                                   setModalState(() {});
                                 },
                               );
@@ -165,7 +173,7 @@ class _LibraryPage extends ConsumerState<LibraryPage> {
                         ),
                         const SizedBox(height: 20),
                         _FiltreSection(
-                          titre: 'Type',
+                          titre: l10n.libFilterType,
                           child: Wrap(
                             spacing: 8,
                             runSpacing: 4,
@@ -183,9 +191,9 @@ class _LibraryPage extends ConsumerState<LibraryPage> {
                         ),
                         const SizedBox(height: 20),
                         _FiltreSection(
-                          titre: 'Favoris',
+                          titre: l10n.libFilterFavorites,
                           child: FilterChip(
-                            label: const Text('Favoris uniquement'),
+                            label: Text(l10n.libFilterFavoritesOnly),
                             avatar: Icon(
                               Icons.favorite,
                               size: 14,
@@ -200,7 +208,7 @@ class _LibraryPage extends ConsumerState<LibraryPage> {
                         ),
                         const SizedBox(height: 20),
                         _FiltreSection(
-                          titre: 'Note',
+                          titre: l10n.libFilterRating,
                           child: Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
@@ -230,7 +238,7 @@ class _LibraryPage extends ConsumerState<LibraryPage> {
                         ),
                         const SizedBox(height: 20),
                         _FiltreSection(
-                          titre: 'Chapitres lus',
+                          titre: l10n.libFilterChaptersRead,
                           child: Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
@@ -238,7 +246,7 @@ class _LibraryPage extends ConsumerState<LibraryPage> {
                                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                                 children: [
                                   Text('${_filtreChapitres.start.toInt()}', style: const TextStyle(fontSize: 12)),
-                                  Text(_filtreChapitres.end >= 1000 ? '1000+' : '${_filtreChapitres.end.toInt()}', style: const TextStyle(fontSize: 12)),
+                                  Text(_filtreChapitres.end >= 1000 ? l10n.libChaptersPlus : '${_filtreChapitres.end.toInt()}', style: const TextStyle(fontSize: 12)),
                                 ],
                               ),
                               RangeSlider(
@@ -248,7 +256,7 @@ class _LibraryPage extends ConsumerState<LibraryPage> {
                                 divisions: 100,
                                 labels: RangeLabels(
                                   _filtreChapitres.start.toInt().toString(),
-                                  _filtreChapitres.end >= 1000 ? '1000+' : _filtreChapitres.end.toInt().toString(),
+                                  _filtreChapitres.end >= 1000 ? l10n.libChaptersPlus : _filtreChapitres.end.toInt().toString(),
                                 ),
                                 onChanged: (v) {
                                   setState(() => _filtreChapitres = v);
@@ -272,11 +280,12 @@ class _LibraryPage extends ConsumerState<LibraryPage> {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
     final mangas = ref.watch(mangasProvider);
 
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Ma bibliothèque'),
+        title: Text(l10n.libTitle),
         actions: [
           if (ref.watch(syncEnCoursProvider))
             const Padding(
@@ -298,11 +307,11 @@ class _LibraryPage extends ConsumerState<LibraryPage> {
                 });
               },
               icon: const Icon(Icons.close),
-              label: const Text('Annuler'),
+              label: Text(l10n.commonCancel),
             )
           else ...[
             IconButton(
-              tooltip: 'Changer de vue',
+              tooltip: l10n.libViewChange,
               onPressed: () => ref.read(viewModeProvider.notifier).suivant(),
               icon: Icon(switch (ref.watch(viewModeProvider)) {
                 ViewMode.grille => Icons.grid_view_rounded,
@@ -327,7 +336,7 @@ class _LibraryPage extends ConsumerState<LibraryPage> {
                   controller: _rechercheController,
                   onChanged: (value) => setState(() => _recherche = value.toLowerCase()),
                   decoration: InputDecoration(
-                    hintText: 'Rechercher un manga...',
+                    hintText: l10n.libSearch,
                     hintStyle: TextStyle(color: Colors.grey.shade400, fontSize: 14),
                     prefixIcon: Icon(Icons.search, color: Colors.grey.shade400),
                     suffixIcon: _recherche.isNotEmpty
@@ -367,7 +376,7 @@ class _LibraryPage extends ConsumerState<LibraryPage> {
                       Icon(Icons.check_circle, size: 16, color: AppColors.danger),
                       const SizedBox(width: 8),
                       Text(
-                        '${_idsSelectionnes.length} sélectionné(s)',
+                        l10n.libSelectedCount(_idsSelectionnes.length),
                         style: TextStyle(color: AppColors.danger, fontWeight: FontWeight.bold),
                       ),
                     ],
@@ -387,15 +396,12 @@ class _LibraryPage extends ConsumerState<LibraryPage> {
               context: context,
               builder: (dialogContext) => AlertDialog(
                 icon: Icon(Icons.warning_amber_rounded, color: AppColors.danger, size: 48),
-                title: Text('Attention !', style: TextStyle(color: AppColors.danger)),
-                content: const Text(
-                  'Cette action est irréversible.\nLes mangas seront définitivement supprimés.',
-                  textAlign: TextAlign.center,
-                ),
+                title: Text(l10n.commonWarning, style: TextStyle(color: AppColors.danger)),
+                content: Text(l10n.libDeleteContent, textAlign: TextAlign.center),
                 actions: [
                   TextButton(
                     onPressed: () => Navigator.pop(dialogContext),
-                    child: const Text('Annuler'),
+                    child: Text(l10n.commonCancel),
                   ),
                   TextButton(
                     style: TextButton.styleFrom(foregroundColor: AppColors.danger),
@@ -413,16 +419,16 @@ class _LibraryPage extends ConsumerState<LibraryPage> {
                       messenger.showSnackBar(
                         SnackBar(
                           backgroundColor: AppColors.success,
-                          content: const Text(
-                            'Manga(s) supprimé(s)',
+                          content: Text(
+                            l10n.libDeleteSuccess,
                             textAlign: TextAlign.center,
-                            style: TextStyle(color: Colors.black87),
+                            style: const TextStyle(color: Colors.black87),
                           ),
                         ),
                       );
                       nav.pop();
                     },
-                    child: const Text('Supprimer'),
+                    child: Text(l10n.commonDelete),
                   ),
                 ],
               ),
@@ -436,7 +442,7 @@ class _LibraryPage extends ConsumerState<LibraryPage> {
 
       body: mangas.when(
         loading: () => const Center(child: CircularProgressIndicator()),
-        error: (e, st) => Center(child: Text('Erreur: $e')),
+        error: (e, st) => Center(child: Text('${l10n.commonWarning} $e')),
         data: (liste) {
           final listeFiltree = liste.where((m) {
             if (_recherche.isNotEmpty && !m.titre.toLowerCase().contains(_recherche)) return false;
@@ -473,15 +479,9 @@ class _LibraryPage extends ConsumerState<LibraryPage> {
                 children: [
                   Icon(Icons.auto_stories_outlined, size: 72, color: Colors.grey.shade400),
                   const SizedBox(height: 16),
-                  Text(
-                    'Votre bibliothèque est vide',
-                    style: TextStyle(fontSize: 16, color: Colors.grey.shade500),
-                  ),
+                  Text(l10n.libEmpty, style: TextStyle(fontSize: 16, color: Colors.grey.shade500)),
                   const SizedBox(height: 8),
-                  Text(
-                    'Appuyez sur + pour ajouter un manga',
-                    style: TextStyle(fontSize: 13, color: Colors.grey.shade400),
-                  ),
+                  Text(l10n.libEmptyHint, style: TextStyle(fontSize: 13, color: Colors.grey.shade400)),
                 ],
               ),
             );
@@ -493,10 +493,7 @@ class _LibraryPage extends ConsumerState<LibraryPage> {
               if (listeFiltree.isEmpty)
                 Expanded(
                   child: Center(
-                    child: Text(
-                      'Aucun manga trouvé',
-                      style: TextStyle(color: Colors.grey.shade400),
-                    ),
+                    child: Text(l10n.libNoResult, style: TextStyle(color: Colors.grey.shade400)),
                   ),
                 )
               else
@@ -521,26 +518,21 @@ class _LibraryPage extends ConsumerState<LibraryPage> {
             mainAxisSpacing: 10,
           ),
           itemCount: liste.length,
-          itemBuilder: (context, i) =>
-              _wrapItem(liste[i], MangaCard(mangaData: liste[i])),
+          itemBuilder: (context, i) => _wrapItem(liste[i], MangaCard(mangaData: liste[i])),
         );
       case ViewMode.liste:
         return ListView.separated(
           padding: padding,
           itemCount: liste.length,
           separatorBuilder: (_, _) => const SizedBox(height: 8),
-          itemBuilder: (context, i) => _wrapItem(
-            liste[i],
-            MangaListTile(mangaData: liste[i]),
-          ),
+          itemBuilder: (context, i) => _wrapItem(liste[i], MangaListTile(mangaData: liste[i])),
         );
       case ViewMode.compact:
         return ListView.separated(
           padding: padding,
           itemCount: liste.length,
           separatorBuilder: (_, _) => const SizedBox(height: 6),
-          itemBuilder: (context, i) =>
-              _wrapItem(liste[i], MangaCompactTile(mangaData: liste[i])),
+          itemBuilder: (context, i) => _wrapItem(liste[i], MangaCompactTile(mangaData: liste[i])),
         );
     }
   }
@@ -557,10 +549,7 @@ class _LibraryPage extends ConsumerState<LibraryPage> {
       },
       onTap: () {
         if (!_modeSelection) {
-          Navigator.push(
-            context,
-            fadeScaleRoute(MangaDetailPage(mangaData: manga)),
-          );
+          Navigator.push(context, fadeScaleRoute(MangaDetailPage(mangaData: manga)));
         } else {
           setState(() {
             if (isSelected) {
