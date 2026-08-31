@@ -37,7 +37,8 @@ class AppColors {
         Color(0xFFD4BAFF),
     ];
 
-    static Color couleurNote(double note) {
+    static Color couleurNote(double? note) {
+        if (note == null) return statutAbandonne;
         final n = note.clamp(0, 10).toDouble();
         return n <= 5
             ? Color.lerp(danger, stars, n / 5)!

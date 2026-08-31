@@ -69,7 +69,7 @@ class MangaCard extends StatelessWidget {
                       borderRadius: BorderRadius.circular(8),
                     ),
                     child: Text(
-                      '${mangaData.note}',
+                      mangaData.note == null ? '?' : '${mangaData.note}',
                       style: const TextStyle(
                         color: Colors.white,
                         fontSize: 11,

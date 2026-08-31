@@ -40,6 +40,7 @@ class _LibraryPage extends ConsumerState<LibraryPage> {
   String? _filtreStatus;
   String? _filtreType;
   bool? _filtreFavori;
+  bool? _filtreNonNote;
   int? _dernierMangaTireId;
   RangeValues _filtreNote = const RangeValues(0, 10);
   RangeValues _filtreChapitres = const RangeValues(0, 1000);
@@ -50,6 +51,7 @@ class _LibraryPage extends ConsumerState<LibraryPage> {
     if (_filtreStatus != null) count++;
     if (_filtreType != null) count++;
     if (_filtreFavori != null) count++;
+    if (_filtreNonNote != null) count++;
     if (_filtreNote.start != 0 || _filtreNote.end != 10) count++;
     if (_filtreChapitres.start != 0 || _filtreChapitres.end != 1000) count++;
     if (_tri != TriOption.aucun) count++;
@@ -57,6 +59,7 @@ class _LibraryPage extends ConsumerState<LibraryPage> {
   }
 
   List<MangaTableData> _listeFiltreeEtTriee(List<MangaTableData> liste) {
+    final filtreNoteActif = _filtreNote.start != 0 || _filtreNote.end != 10;
     final listeFiltree = liste.where((m) {
       if (_recherche.isNotEmpty &&
           !m.titre.toLowerCase().contains(_recherche)) {
@@ -65,7 +68,13 @@ class _LibraryPage extends ConsumerState<LibraryPage> {
       if (_filtreStatus != null && m.status != _filtreStatus) return false;
       if (_filtreType != null && m.typeManga != _filtreType) return false;
       if (_filtreFavori != null && m.estFavori != _filtreFavori) return false;
-      if (m.note < _filtreNote.start || m.note > _filtreNote.end) return false;
+      if (_filtreNonNote == true && m.note != null) return false;
+      if (filtreNoteActif &&
+          (m.note == null ||
+              m.note! < _filtreNote.start ||
+              m.note! > _filtreNote.end)) {
+        return false;
+      }
       if (m.chapitres < _filtreChapitres.start) return false;
       if (_filtreChapitres.end < 1000 && m.chapitres > _filtreChapitres.end) {
         return false;
@@ -79,9 +88,13 @@ class _LibraryPage extends ConsumerState<LibraryPage> {
       case TriOption.titreZA:
         listeFiltree.sort((a, b) => b.titre.compareTo(a.titre));
       case TriOption.meilleureNote:
-        listeFiltree.sort((a, b) => b.note.compareTo(a.note));
+        listeFiltree.sort(
+          (a, b) => _comparerNote(a.note, b.note, descendant: true),
+        );
       case TriOption.moinsNote:
-        listeFiltree.sort((a, b) => a.note.compareTo(b.note));
+        listeFiltree.sort(
+          (a, b) => _comparerNote(a.note, b.note, descendant: false),
+        );
       case TriOption.plusChapitres:
         listeFiltree.sort((a, b) => b.chapitres.compareTo(a.chapitres));
       case TriOption.moinsChapitres:
@@ -91,6 +104,13 @@ class _LibraryPage extends ConsumerState<LibraryPage> {
     }
 
     return listeFiltree;
+  }
+
+  int _comparerNote(double? a, double? b, {required bool descendant}) {
+    if (a == null && b == null) return 0;
+    if (a == null) return 1;
+    if (b == null) return -1;
+    return descendant ? b.compareTo(a) : a.compareTo(b);
   }
 
   void _tirerMangaAuHasard() {
@@ -167,6 +187,7 @@ class _LibraryPage extends ConsumerState<LibraryPage> {
                             _filtreStatus = null;
                             _filtreType = null;
                             _filtreFavori = null;
+                            _filtreNonNote = null;
                             _filtreNote = const RangeValues(0, 10);
                             _filtreChapitres = const RangeValues(0, 1000);
                             _tri = TriOption.aucun;
@@ -328,6 +349,15 @@ class _LibraryPage extends ConsumerState<LibraryPage> {
                                 ),
                                 onChanged: (v) {
                                   setState(() => _filtreNote = v);
+                                  setModalState(() {});
+                                },
+                              ),
+                              const SizedBox(height: 8),
+                              FilterChip(
+                                label: Text(l10n.libFilterUnratedOnly),
+                                selected: _filtreNonNote == true,
+                                onSelected: (v) {
+                                  setState(() => _filtreNonNote = v ? true : null);
                                   setModalState(() {});
                                 },
                               ),

@@ -90,6 +90,9 @@ class AppLocalizationsEn extends AppLocalizations {
   String get libFilterRating => 'Rating';
 
   @override
+  String get libFilterUnratedOnly => 'Unrated only';
+
+  @override
   String get libFilterChapters => 'Chapters';
 
   @override
@@ -204,6 +207,9 @@ class AppLocalizationsEn extends AppLocalizations {
   String get detailRating => 'Rating';
 
   @override
+  String get detailRatingNone => 'Not rated';
+
+  @override
   String get detailLinks => 'Access links';
 
   @override
@@ -312,10 +318,24 @@ class AppLocalizationsEn extends AppLocalizations {
   String get statsAvgRating => 'Avg. rating';
 
   @override
+  String statsGlobalRating(String avg, int count) {
+    return 'Overall rating = $avg/10 ($count rated manga(s))';
+  }
+
+  @override
+  String get statsNoRating => 'No manga rated';
+
+  @override
   String get statsChapters => 'Chapters';
 
   @override
   String get statsByStatus => 'By status';
+
+  @override
+  String get statsByRating => 'By rating';
+
+  @override
+  String get statsRated => 'Rated';
 
   @override
   String get statsByType => 'By type';

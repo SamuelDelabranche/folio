@@ -36,7 +36,7 @@ class _MangaDetailPage extends ConsumerState<MangaDetailPage> {
   late List<Lien> _liens;
   String _rechercheGenre = '';
   late String _titre;
-  late double _noteEdition;
+  double? _noteEdition;
 
   final _rechercheController = TextEditingController();
   late TextEditingController _titreController;
@@ -697,23 +697,36 @@ class _MangaDetailPage extends ConsumerState<MangaDetailPage> {
                                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                                 children: [
                                   Text(l10n.detailRating, style: const TextStyle(fontWeight: FontWeight.w500)),
-                                  Container(
-                                    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-                                    decoration: BoxDecoration(
-                                      color: AppColors.couleurNote(_noteEdition).withValues(alpha: 0.15),
-                                      borderRadius: BorderRadius.circular(20),
-                                    ),
-                                    child: Text(
-                                      '${_noteEdition.toStringAsFixed(1)} / 10',
-                                      style: TextStyle(fontWeight: FontWeight.bold, color: AppColors.couleurNote(_noteEdition)),
-                                    ),
+                                  Row(
+                                    children: [
+                                      FilterChip(
+                                        label: Text(l10n.detailRatingNone),
+                                        selected: _noteEdition == null,
+                                        onSelected: (v) => setState(() => _noteEdition = v ? null : 5),
+                                      ),
+                                      const SizedBox(width: 8),
+                                      Container(
+                                        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                                        decoration: BoxDecoration(
+                                          color: AppColors.couleurNote(_noteEdition).withValues(alpha: 0.15),
+                                          borderRadius: BorderRadius.circular(20),
+                                        ),
+                                        child: Text(
+                                          _noteEdition == null
+                                              ? l10n.detailRatingNone
+                                              : '${_noteEdition!.toStringAsFixed(1)} / 10',
+                                          style: TextStyle(fontWeight: FontWeight.bold, color: AppColors.couleurNote(_noteEdition)),
+                                        ),
+                                      ),
+                                    ],
                                   ),
                                 ],
                               ),
                               Slider(
-                                value: _noteEdition,
+                                value: _noteEdition ?? 0,
                                 max: 10,
                                 divisions: 20,
+                                activeColor: _noteEdition == null ? Colors.grey : null,
                                 onChanged: (value) => setState(() => _noteEdition = value),
                               ),
                             ],
@@ -750,8 +763,10 @@ class _MangaDetailPage extends ConsumerState<MangaDetailPage> {
                                       borderRadius: BorderRadius.circular(20),
                                     ),
                                     child: Text(
-                                      '${_noteEdition.toStringAsFixed(1)} / 10',
-                                      style: TextStyle(fontWeight: FontWeight.bold, color: AppColors.couleurNote(_noteEdition)),
+                                      widget.mangaData.note == null
+                                          ? l10n.detailRatingNone
+                                          : '${widget.mangaData.note!.toStringAsFixed(1)} / 10',
+                                      style: TextStyle(fontWeight: FontWeight.bold, color: AppColors.couleurNote(widget.mangaData.note)),
                                     ),
                                   ),
                                 ),

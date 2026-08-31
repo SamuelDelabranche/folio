@@ -101,9 +101,9 @@ class $MangaTableTable extends MangaTable
   late final GeneratedColumn<double> note = GeneratedColumn<double>(
     'note',
     aliasedName,
-    false,
+    true,
     type: DriftSqlType.double,
-    requiredDuringInsert: true,
+    requiredDuringInsert: false,
   );
   static const VerificationMeta _chapitresMeta = const VerificationMeta(
     'chapitres',
@@ -313,8 +313,6 @@ class $MangaTableTable extends MangaTable
         _noteMeta,
         note.isAcceptableOrUnknown(data['note']!, _noteMeta),
       );
-    } else if (isInserting) {
-      context.missing(_noteMeta);
     }
     if (data.containsKey('chapitres')) {
       context.handle(
@@ -425,7 +423,7 @@ class $MangaTableTable extends MangaTable
       note: attachedDatabase.typeMapping.read(
         DriftSqlType.double,
         data['${effectivePrefix}note'],
-      )!,
+      ),
       chapitres: attachedDatabase.typeMapping.read(
         DriftSqlType.double,
         data['${effectivePrefix}chapitres'],
@@ -480,7 +478,7 @@ class MangaTableData extends DataClass implements Insertable<MangaTableData> {
   final String? genre;
   final String typeManga;
   final bool estFavori;
-  final double note;
+  final double? note;
   final double chapitres;
   final String? liens;
   final int? anilistId;
@@ -499,7 +497,7 @@ class MangaTableData extends DataClass implements Insertable<MangaTableData> {
     this.genre,
     required this.typeManga,
     required this.estFavori,
-    required this.note,
+    this.note,
     required this.chapitres,
     this.liens,
     this.anilistId,
@@ -527,7 +525,9 @@ class MangaTableData extends DataClass implements Insertable<MangaTableData> {
     }
     map['type_manga'] = Variable<String>(typeManga);
     map['est_favori'] = Variable<bool>(estFavori);
-    map['note'] = Variable<double>(note);
+    if (!nullToAbsent || note != null) {
+      map['note'] = Variable<double>(note);
+    }
     map['chapitres'] = Variable<double>(chapitres);
     if (!nullToAbsent || liens != null) {
       map['liens'] = Variable<String>(liens);
@@ -562,7 +562,7 @@ class MangaTableData extends DataClass implements Insertable<MangaTableData> {
           : Value(genre),
       typeManga: Value(typeManga),
       estFavori: Value(estFavori),
-      note: Value(note),
+      note: note == null && nullToAbsent ? const Value.absent() : Value(note),
       chapitres: Value(chapitres),
       liens: liens == null && nullToAbsent
           ? const Value.absent()
@@ -595,7 +595,7 @@ class MangaTableData extends DataClass implements Insertable<MangaTableData> {
       genre: serializer.fromJson<String?>(json['genre']),
       typeManga: serializer.fromJson<String>(json['typeManga']),
       estFavori: serializer.fromJson<bool>(json['estFavori']),
-      note: serializer.fromJson<double>(json['note']),
+      note: serializer.fromJson<double?>(json['note']),
       chapitres: serializer.fromJson<double>(json['chapitres']),
       liens: serializer.fromJson<String?>(json['liens']),
       anilistId: serializer.fromJson<int?>(json['anilistId']),
@@ -619,7 +619,7 @@ class MangaTableData extends DataClass implements Insertable<MangaTableData> {
       'genre': serializer.toJson<String?>(genre),
       'typeManga': serializer.toJson<String>(typeManga),
       'estFavori': serializer.toJson<bool>(estFavori),
-      'note': serializer.toJson<double>(note),
+      'note': serializer.toJson<double?>(note),
       'chapitres': serializer.toJson<double>(chapitres),
       'liens': serializer.toJson<String?>(liens),
       'anilistId': serializer.toJson<int?>(anilistId),
@@ -641,7 +641,7 @@ class MangaTableData extends DataClass implements Insertable<MangaTableData> {
     Value<String?> genre = const Value.absent(),
     String? typeManga,
     bool? estFavori,
-    double? note,
+    Value<double?> note = const Value.absent(),
     double? chapitres,
     Value<String?> liens = const Value.absent(),
     Value<int?> anilistId = const Value.absent(),
@@ -660,7 +660,7 @@ class MangaTableData extends DataClass implements Insertable<MangaTableData> {
     genre: genre.present ? genre.value : this.genre,
     typeManga: typeManga ?? this.typeManga,
     estFavori: estFavori ?? this.estFavori,
-    note: note ?? this.note,
+    note: note.present ? note.value : this.note,
     chapitres: chapitres ?? this.chapitres,
     liens: liens.present ? liens.value : this.liens,
     anilistId: anilistId.present ? anilistId.value : this.anilistId,
@@ -783,7 +783,7 @@ class MangaTableCompanion extends UpdateCompanion<MangaTableData> {
   final Value<String?> genre;
   final Value<String> typeManga;
   final Value<bool> estFavori;
-  final Value<double> note;
+  final Value<double?> note;
   final Value<double> chapitres;
   final Value<String?> liens;
   final Value<int?> anilistId;
@@ -822,7 +822,7 @@ class MangaTableCompanion extends UpdateCompanion<MangaTableData> {
     this.genre = const Value.absent(),
     required String typeManga,
     required bool estFavori,
-    required double note,
+    this.note = const Value.absent(),
     required double chapitres,
     this.liens = const Value.absent(),
     this.anilistId = const Value.absent(),
@@ -836,7 +836,6 @@ class MangaTableCompanion extends UpdateCompanion<MangaTableData> {
        status = Value(status),
        typeManga = Value(typeManga),
        estFavori = Value(estFavori),
-       note = Value(note),
        chapitres = Value(chapitres);
   static Insertable<MangaTableData> custom({
     Expression<int>? id,
@@ -889,7 +888,7 @@ class MangaTableCompanion extends UpdateCompanion<MangaTableData> {
     Value<String?>? genre,
     Value<String>? typeManga,
     Value<bool>? estFavori,
-    Value<double>? note,
+    Value<double?>? note,
     Value<double>? chapitres,
     Value<String?>? liens,
     Value<int?>? anilistId,
@@ -1030,7 +1029,7 @@ typedef $$MangaTableTableCreateCompanionBuilder =
       Value<String?> genre,
       required String typeManga,
       required bool estFavori,
-      required double note,
+      Value<double?> note,
       required double chapitres,
       Value<String?> liens,
       Value<int?> anilistId,
@@ -1051,7 +1050,7 @@ typedef $$MangaTableTableUpdateCompanionBuilder =
       Value<String?> genre,
       Value<String> typeManga,
       Value<bool> estFavori,
-      Value<double> note,
+      Value<double?> note,
       Value<double> chapitres,
       Value<String?> liens,
       Value<int?> anilistId,
@@ -1376,7 +1375,7 @@ class $$MangaTableTableTableManager
                 Value<String?> genre = const Value.absent(),
                 Value<String> typeManga = const Value.absent(),
                 Value<bool> estFavori = const Value.absent(),
-                Value<double> note = const Value.absent(),
+                Value<double?> note = const Value.absent(),
                 Value<double> chapitres = const Value.absent(),
                 Value<String?> liens = const Value.absent(),
                 Value<int?> anilistId = const Value.absent(),
@@ -1416,7 +1415,7 @@ class $$MangaTableTableTableManager
                 Value<String?> genre = const Value.absent(),
                 required String typeManga,
                 required bool estFavori,
-                required double note,
+                Value<double?> note = const Value.absent(),
                 required double chapitres,
                 Value<String?> liens = const Value.absent(),
                 Value<int?> anilistId = const Value.absent(),

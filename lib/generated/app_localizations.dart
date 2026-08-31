@@ -254,6 +254,12 @@ abstract class AppLocalizations {
   /// **'Note'**
   String get libFilterRating;
 
+  /// No description provided for @libFilterUnratedOnly.
+  ///
+  /// In fr, this message translates to:
+  /// **'Non notés uniquement'**
+  String get libFilterUnratedOnly;
+
   /// No description provided for @libFilterChapters.
   ///
   /// In fr, this message translates to:
@@ -470,6 +476,12 @@ abstract class AppLocalizations {
   /// **'Note'**
   String get detailRating;
 
+  /// No description provided for @detailRatingNone.
+  ///
+  /// In fr, this message translates to:
+  /// **'Non noté'**
+  String get detailRatingNone;
+
   /// No description provided for @detailLinks.
   ///
   /// In fr, this message translates to:
@@ -668,6 +680,18 @@ abstract class AppLocalizations {
   /// **'Note moy.'**
   String get statsAvgRating;
 
+  /// No description provided for @statsGlobalRating.
+  ///
+  /// In fr, this message translates to:
+  /// **'Notation globale = {avg}/10 ({count} manga(s) noté(s))'**
+  String statsGlobalRating(String avg, int count);
+
+  /// No description provided for @statsNoRating.
+  ///
+  /// In fr, this message translates to:
+  /// **'Aucun manga noté'**
+  String get statsNoRating;
+
   /// No description provided for @statsChapters.
   ///
   /// In fr, this message translates to:
@@ -679,6 +703,18 @@ abstract class AppLocalizations {
   /// In fr, this message translates to:
   /// **'Par statut'**
   String get statsByStatus;
+
+  /// No description provided for @statsByRating.
+  ///
+  /// In fr, this message translates to:
+  /// **'Par notation'**
+  String get statsByRating;
+
+  /// No description provided for @statsRated.
+  ///
+  /// In fr, this message translates to:
+  /// **'Noté'**
+  String get statsRated;
 
   /// No description provided for @statsByType.
   ///
