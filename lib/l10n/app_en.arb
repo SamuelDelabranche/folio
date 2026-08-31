@@ -182,6 +182,8 @@
   "settingsStartTabTitle": "Start tab",
   "settingsCopyright": "Content & copyright",
   "settingsCopyrightSub": "Images, data and legal notices",
+  "settingsTerms": "Terms of use",
+  "settingsTermsSub": "Your responsibilities and ours",
 
   "copyrightTitle": "Content & copyright",
   "copyrightBody": "Cover images and bibliographic information are provided by AniList (anilist.co), a community database managed by its users.\n\nFolio does not host any content. All images remain the property of their respective authors and publishers.\n\nIf you are an author, publisher, or rights holder and wish to report content, please open an issue on the project's GitHub repository:",

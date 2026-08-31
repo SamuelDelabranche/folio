@@ -1070,6 +1070,18 @@ abstract class AppLocalizations {
   /// **'Images, données et mentions légales'**
   String get settingsCopyrightSub;
 
+  /// No description provided for @settingsTerms.
+  ///
+  /// In fr, this message translates to:
+  /// **'Conditions d\'utilisation'**
+  String get settingsTerms;
+
+  /// No description provided for @settingsTermsSub.
+  ///
+  /// In fr, this message translates to:
+  /// **'Vos responsabilités et les nôtres'**
+  String get settingsTermsSub;
+
   /// No description provided for @copyrightTitle.
   ///
   /// In fr, this message translates to:

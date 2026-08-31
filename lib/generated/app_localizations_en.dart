@@ -525,6 +525,12 @@ class AppLocalizationsEn extends AppLocalizations {
   String get settingsCopyrightSub => 'Images, data and legal notices';
 
   @override
+  String get settingsTerms => 'Terms of use';
+
+  @override
+  String get settingsTermsSub => 'Your responsibilities and ours';
+
+  @override
   String get copyrightTitle => 'Content & copyright';
 
   @override
