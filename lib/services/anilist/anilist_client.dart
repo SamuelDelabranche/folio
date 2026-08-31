@@ -58,7 +58,7 @@ query ($id: Int) {
 }''';
 
   Future<List<AnilistSearchResult>> search(String titre) async {
-    final data = await _post(_querySearch, {'search': titre});
+    final data = await _post(_querySearch, {'search': titre.toLowerCase()});
     final page = data['Page'];
     final medias = page is Map<String, dynamic> ? page['media'] : null;
     if (medias is! List) return const [];
