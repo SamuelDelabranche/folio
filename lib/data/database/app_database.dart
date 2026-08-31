@@ -14,7 +14,7 @@ class AppDatabase extends _$AppDatabase {
   MangaDao get mangaDao => MangaDao(this);
 
   @override
-  int get schemaVersion => 4;
+  int get schemaVersion => 5;
 
   @override
   MigrationStrategy get migration => MigrationStrategy(
@@ -37,6 +37,10 @@ class AppDatabase extends _$AppDatabase {
           "UPDATE manga_table SET image_source = 'utilisateur' "
           'WHERE image_path IS NOT NULL',
         );
+      }
+      if (from < 5) {
+        await m.alterTable(TableMigration(mangaTable));
+        await customStatement('UPDATE manga_table SET note = NULL WHERE note = 0.0');
       }
     },
   );

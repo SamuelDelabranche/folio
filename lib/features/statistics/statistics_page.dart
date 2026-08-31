@@ -18,9 +18,11 @@ class StatisticsPage extends ConsumerWidget {
         error: (err, stack) => Center(child: Text('${l10n.commonWarning} $err')),
         data: (mangas) {
           final totalMangas = mangas.length;
-          final moyenneNote = mangas.isEmpty
+          final mangasNotes = mangas.where((m) => m.note != null).toList();
+          final moyenneNote = mangasNotes.isEmpty
               ? 0.0
-              : mangas.map((m) => m.note).reduce((a, b) => a + b) / mangas.length;
+              : mangasNotes.map((m) => m.note!).reduce((a, b) => a + b) /
+                    mangasNotes.length;
           final totalChapitres = mangas.isEmpty
               ? 0.0
               : mangas.map((m) => m.chapitres).reduce((a, b) => a + b);
@@ -93,6 +95,18 @@ class StatisticsPage extends ConsumerWidget {
                     ),
                   ),
                 ),
+                const SizedBox(height: 6),
+                Center(
+                  child: Text(
+                    mangasNotes.isEmpty
+                        ? l10n.statsNoRating
+                        : l10n.statsGlobalRating(
+                            moyenneNote.toStringAsFixed(1),
+                            mangasNotes.length,
+                          ),
+                    style: TextStyle(fontSize: 12, color: Colors.grey.shade600),
+                  ),
+                ),
                 const SizedBox(height: 12),
 
                 _SectionCard(
@@ -103,6 +117,17 @@ class StatisticsPage extends ConsumerWidget {
                       _ProgressRow(label: l10n.statusReading, count: enCours, total: totalMangas, color: AppColors.statutEnCours),
                       _ProgressRow(label: l10n.statusToRead, count: aLire, total: totalMangas, color: AppColors.statutALire),
                       _ProgressRow(label: l10n.statusDropped, count: abandonne, total: totalMangas, color: AppColors.statutAbandonne, last: true),
+                    ],
+                  ),
+                ),
+                const SizedBox(height: 12),
+
+                _SectionCard(
+                  title: l10n.statsByRating,
+                  child: Column(
+                    children: [
+                      _ProgressRow(label: l10n.statsRated, count: mangasNotes.length, total: totalMangas, color: AppColors.stars),
+                      _ProgressRow(label: l10n.detailRatingNone, count: totalMangas - mangasNotes.length, total: totalMangas, color: AppColors.statutAbandonne, last: true),
                     ],
                   ),
                 ),

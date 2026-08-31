@@ -88,7 +88,7 @@ class MangaListTile extends StatelessWidget {
                       Icon(Icons.star, size: 12, color: AppColors.couleurNote(mangaData.note)),
                       const SizedBox(width: 2),
                       Text(
-                        '${mangaData.note}',
+                        mangaData.note == null ? '?' : '${mangaData.note}',
                         style: TextStyle(
                           fontSize: 12,
                           fontWeight: FontWeight.w600,
@@ -182,7 +182,7 @@ class MangaCompactTile extends StatelessWidget {
                 borderRadius: BorderRadius.circular(8),
               ),
               child: Text(
-                '${mangaData.note}',
+                mangaData.note == null ? '?' : '${mangaData.note}',
                 style: const TextStyle(
                   color: Colors.white,
                   fontSize: 11,

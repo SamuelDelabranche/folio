@@ -27,7 +27,7 @@ class _AddMangaPageState extends ConsumerState<AddMangaPage> {
   final List<String> _genreSelectionne = [];
   final List<Lien> _liens = [];
   bool _estFavori = false;
-  double _note = 5.0;
+  double? _note;
 
   @override
   void dispose() {
@@ -145,26 +145,37 @@ class _AddMangaPageState extends ConsumerState<AddMangaPage> {
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
                   Text(l10n.addRating, style: const TextStyle(fontWeight: FontWeight.w500)),
-                  Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-                    decoration: BoxDecoration(
-                      color: AppColors.couleurNote(_note).withValues(alpha: 0.15),
-                      borderRadius: BorderRadius.circular(20),
-                    ),
-                    child: Text(
-                      '${_note.toStringAsFixed(1)} / 10',
-                      style: TextStyle(
-                        fontWeight: FontWeight.bold,
-                        color: AppColors.couleurNote(_note),
+                  Row(
+                    children: [
+                      FilterChip(
+                        label: Text(l10n.detailRatingNone),
+                        selected: _note == null,
+                        onSelected: (v) => setState(() => _note = v ? null : 5),
                       ),
-                    ),
+                      const SizedBox(width: 8),
+                      Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                        decoration: BoxDecoration(
+                          color: AppColors.couleurNote(_note).withValues(alpha: 0.15),
+                          borderRadius: BorderRadius.circular(20),
+                        ),
+                        child: Text(
+                          _note == null ? l10n.detailRatingNone : '${_note!.toStringAsFixed(1)} / 10',
+                          style: TextStyle(
+                            fontWeight: FontWeight.bold,
+                            color: AppColors.couleurNote(_note),
+                          ),
+                        ),
+                      ),
+                    ],
                   ),
                 ],
               ),
               Slider(
-                value: _note,
+                value: _note ?? 0,
                 max: 10,
                 divisions: 20,
+                activeColor: _note == null ? Colors.grey : null,
                 onChanged: (value) => setState(() => _note = value),
               ),
               const SizedBox(height: 8),

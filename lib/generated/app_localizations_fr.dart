@@ -90,6 +90,9 @@ class AppLocalizationsFr extends AppLocalizations {
   String get libFilterRating => 'Note';
 
   @override
+  String get libFilterUnratedOnly => 'Non notés uniquement';
+
+  @override
   String get libFilterChapters => 'Chapitres';
 
   @override
@@ -204,6 +207,9 @@ class AppLocalizationsFr extends AppLocalizations {
   String get detailRating => 'Note';
 
   @override
+  String get detailRatingNone => 'Non noté';
+
+  @override
   String get detailLinks => 'Liens d\'accès';
 
   @override
@@ -313,10 +319,24 @@ class AppLocalizationsFr extends AppLocalizations {
   String get statsAvgRating => 'Note moy.';
 
   @override
+  String statsGlobalRating(String avg, int count) {
+    return 'Notation globale = $avg/10 ($count manga(s) noté(s))';
+  }
+
+  @override
+  String get statsNoRating => 'Aucun manga noté';
+
+  @override
   String get statsChapters => 'Chapitres';
 
   @override
   String get statsByStatus => 'Par statut';
+
+  @override
+  String get statsByRating => 'Par notation';
+
+  @override
+  String get statsRated => 'Noté';
 
   @override
   String get statsByType => 'Par type';
@@ -526,6 +546,12 @@ class AppLocalizationsFr extends AppLocalizations {
 
   @override
   String get settingsCopyrightSub => 'Images, données et mentions légales';
+
+  @override
+  String get settingsTerms => 'Conditions d\'utilisation';
+
+  @override
+  String get settingsTermsSub => 'Vos responsabilités et les nôtres';
 
   @override
   String get copyrightTitle => 'Contenus & droits d\'auteur';

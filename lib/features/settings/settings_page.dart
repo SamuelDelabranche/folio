@@ -335,6 +335,13 @@ class _SettingsPage extends ConsumerState<SettingsPage> {
     }
   }
 
+  Future<void> _ouvrirConditions() async {
+    final uri = Uri.parse('https://github.com/SamuelDelabranche/folio/blob/main/TERMS.md');
+    if (await canLaunchUrl(uri)) {
+      await launchUrl(uri, mode: LaunchMode.externalApplication);
+    }
+  }
+
   void _toutEffacer() {
     final l10n = AppLocalizations.of(context)!;
     showDialog(
@@ -753,6 +760,14 @@ class _SettingsPage extends ConsumerState<SettingsPage> {
                     title: l10n.settingsCopyright,
                     subtitle: l10n.settingsCopyrightSub,
                     onTap: _montrerDisclaimerContenu,
+                  ),
+                  const Divider(height: 1, indent: 68),
+                  _SettingsTile(
+                    icon: Icons.gavel_outlined,
+                    iconColor: Colors.brown,
+                    title: l10n.settingsTerms,
+                    subtitle: l10n.settingsTermsSub,
+                    onTap: _ouvrirConditions,
                   ),
                   const Divider(height: 1, indent: 68),
                   _SettingsTile(

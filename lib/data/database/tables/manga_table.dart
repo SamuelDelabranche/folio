@@ -12,7 +12,7 @@ class MangaTable extends Table{
 
   BoolColumn get estFavori => boolean()();
 
-  RealColumn get note => real()();
+  RealColumn get note => real().nullable()();
   RealColumn get chapitres => real()();
 
   TextColumn get liens => text().nullable()();
