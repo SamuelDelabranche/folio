@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:math';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -14,7 +15,15 @@ import 'package:folio/services/cover_service.dart';
 import 'package:folio/shared/widgets/manga_card.dart';
 import 'package:folio/shared/widgets/manga_list_tile.dart';
 
-enum TriOption { aucun, titreAZ, titreZA, meilleureNote, moinsNote, plusChapitres, moinsChapitres }
+enum TriOption {
+  aucun,
+  titreAZ,
+  titreZA,
+  meilleureNote,
+  moinsNote,
+  plusChapitres,
+  moinsChapitres,
+}
 
 class LibraryPage extends ConsumerStatefulWidget {
   const LibraryPage({super.key});
@@ -31,6 +40,7 @@ class _LibraryPage extends ConsumerState<LibraryPage> {
   String? _filtreStatus;
   String? _filtreType;
   bool? _filtreFavori;
+  int? _dernierMangaTireId;
   RangeValues _filtreNote = const RangeValues(0, 10);
   RangeValues _filtreChapitres = const RangeValues(0, 1000);
   TriOption _tri = TriOption.aucun;
@@ -44,6 +54,59 @@ class _LibraryPage extends ConsumerState<LibraryPage> {
     if (_filtreChapitres.start != 0 || _filtreChapitres.end != 1000) count++;
     if (_tri != TriOption.aucun) count++;
     return count;
+  }
+
+  List<MangaTableData> _listeFiltreeEtTriee(List<MangaTableData> liste) {
+    final listeFiltree = liste.where((m) {
+      if (_recherche.isNotEmpty &&
+          !m.titre.toLowerCase().contains(_recherche)) {
+        return false;
+      }
+      if (_filtreStatus != null && m.status != _filtreStatus) return false;
+      if (_filtreType != null && m.typeManga != _filtreType) return false;
+      if (_filtreFavori != null && m.estFavori != _filtreFavori) return false;
+      if (m.note < _filtreNote.start || m.note > _filtreNote.end) return false;
+      if (m.chapitres < _filtreChapitres.start) return false;
+      if (_filtreChapitres.end < 1000 && m.chapitres > _filtreChapitres.end) {
+        return false;
+      }
+      return true;
+    }).toList();
+
+    switch (_tri) {
+      case TriOption.titreAZ:
+        listeFiltree.sort((a, b) => a.titre.compareTo(b.titre));
+      case TriOption.titreZA:
+        listeFiltree.sort((a, b) => b.titre.compareTo(a.titre));
+      case TriOption.meilleureNote:
+        listeFiltree.sort((a, b) => b.note.compareTo(a.note));
+      case TriOption.moinsNote:
+        listeFiltree.sort((a, b) => a.note.compareTo(b.note));
+      case TriOption.plusChapitres:
+        listeFiltree.sort((a, b) => b.chapitres.compareTo(a.chapitres));
+      case TriOption.moinsChapitres:
+        listeFiltree.sort((a, b) => a.chapitres.compareTo(b.chapitres));
+      case TriOption.aucun:
+        break;
+    }
+
+    return listeFiltree;
+  }
+
+  void _tirerMangaAuHasard() {
+    final liste = ref.read(mangasProvider).value;
+    if(liste == null || liste.isEmpty) return;
+
+    final listeFiltree = _listeFiltreeEtTriee(liste);
+    final candidats = listeFiltree.length > 1
+    ? listeFiltree.where((m) => m.id != _dernierMangaTireId).toList()
+    : listeFiltree;
+    if (listeFiltree.isEmpty || candidats.isEmpty) return;
+
+    final valeurAuHasard = Random().nextInt(candidats.length);
+    final manga = candidats[valeurAuHasard];
+    _dernierMangaTireId = manga.id;
+    Navigator.push(context, fadeScaleRoute(MangaDetailPage(mangaData: manga)));
   }
 
   @override
@@ -93,7 +156,10 @@ class _LibraryPage extends ConsumerState<LibraryPage> {
                     children: [
                       Text(
                         l10n.libFilterTitle,
-                        style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                        style: const TextStyle(
+                          fontSize: 18,
+                          fontWeight: FontWeight.bold,
+                        ),
                       ),
                       TextButton(
                         onPressed: () {
@@ -132,7 +198,10 @@ class _LibraryPage extends ConsumerState<LibraryPage> {
                                 option2: TriOption.titreZA,
                                 label2: '↑',
                                 current: _tri,
-                                onTap: (v) { setState(() => _tri = v); setModalState(() {}); },
+                                onTap: (v) {
+                                  setState(() => _tri = v);
+                                  setModalState(() {});
+                                },
                               ),
                               _TriCycleChip(
                                 baseLabel: l10n.libFilterRating,
@@ -141,7 +210,10 @@ class _LibraryPage extends ConsumerState<LibraryPage> {
                                 option2: TriOption.moinsNote,
                                 label2: '↑',
                                 current: _tri,
-                                onTap: (v) { setState(() => _tri = v); setModalState(() {}); },
+                                onTap: (v) {
+                                  setState(() => _tri = v);
+                                  setModalState(() {});
+                                },
                               ),
                               _TriCycleChip(
                                 baseLabel: l10n.libFilterChapters,
@@ -150,7 +222,10 @@ class _LibraryPage extends ConsumerState<LibraryPage> {
                                 option2: TriOption.moinsChapitres,
                                 label2: '↑',
                                 current: _tri,
-                                onTap: (v) { setState(() => _tri = v); setModalState(() {}); },
+                                onTap: (v) {
+                                  setState(() => _tri = v);
+                                  setModalState(() {});
+                                },
                               ),
                             ],
                           ),
@@ -161,12 +236,16 @@ class _LibraryPage extends ConsumerState<LibraryPage> {
                           child: Wrap(
                             spacing: 8,
                             runSpacing: 4,
-                            children: statuses.map<Widget>(((String, String) s) {
+                            children: statuses.map<Widget>((
+                              (String, String) s,
+                            ) {
                               return FilterChip(
                                 label: Text(s.$2),
                                 selected: _filtreStatus == s.$1,
                                 onSelected: (v) {
-                                  setState(() => _filtreStatus = v ? s.$1 : null);
+                                  setState(
+                                    () => _filtreStatus = v ? s.$1 : null,
+                                  );
                                   setModalState(() {});
                                 },
                               );
@@ -179,16 +258,25 @@ class _LibraryPage extends ConsumerState<LibraryPage> {
                           child: Wrap(
                             spacing: 8,
                             runSpacing: 4,
-                            children: ['Manga', 'Manhwa', 'Manhua', 'Novel', ...ref.read(customTypesProvider)].map((t) {
-                              return FilterChip(
-                                label: Text(t),
-                                selected: _filtreType == t,
-                                onSelected: (v) {
-                                  setState(() => _filtreType = v ? t : null);
-                                  setModalState(() {});
-                                },
-                              );
-                            }).toList(),
+                            children:
+                                [
+                                  'Manga',
+                                  'Manhwa',
+                                  'Manhua',
+                                  'Novel',
+                                  ...ref.read(customTypesProvider),
+                                ].map((t) {
+                                  return FilterChip(
+                                    label: Text(t),
+                                    selected: _filtreType == t,
+                                    onSelected: (v) {
+                                      setState(
+                                        () => _filtreType = v ? t : null,
+                                      );
+                                      setModalState(() {});
+                                    },
+                                  );
+                                }).toList(),
                           ),
                         ),
                         const SizedBox(height: 20),
@@ -199,7 +287,9 @@ class _LibraryPage extends ConsumerState<LibraryPage> {
                             avatar: Icon(
                               Icons.favorite,
                               size: 14,
-                              color: _filtreFavori == true ? Colors.red : Colors.grey,
+                              color: _filtreFavori == true
+                                  ? Colors.red
+                                  : Colors.grey,
                             ),
                             selected: _filtreFavori == true,
                             onSelected: (v) {
@@ -215,10 +305,17 @@ class _LibraryPage extends ConsumerState<LibraryPage> {
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
                               Row(
-                                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                mainAxisAlignment:
+                                    MainAxisAlignment.spaceBetween,
                                 children: [
-                                  Text('${_filtreNote.start.toInt()}', style: const TextStyle(fontSize: 12)),
-                                  Text('${_filtreNote.end.toInt()}', style: const TextStyle(fontSize: 12)),
+                                  Text(
+                                    '${_filtreNote.start.toInt()}',
+                                    style: const TextStyle(fontSize: 12),
+                                  ),
+                                  Text(
+                                    '${_filtreNote.end.toInt()}',
+                                    style: const TextStyle(fontSize: 12),
+                                  ),
                                 ],
                               ),
                               RangeSlider(
@@ -244,10 +341,19 @@ class _LibraryPage extends ConsumerState<LibraryPage> {
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
                               Row(
-                                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                mainAxisAlignment:
+                                    MainAxisAlignment.spaceBetween,
                                 children: [
-                                  Text('${_filtreChapitres.start.toInt()}', style: const TextStyle(fontSize: 12)),
-                                  Text(_filtreChapitres.end >= 1000 ? l10n.libChaptersPlus : '${_filtreChapitres.end.toInt()}', style: const TextStyle(fontSize: 12)),
+                                  Text(
+                                    '${_filtreChapitres.start.toInt()}',
+                                    style: const TextStyle(fontSize: 12),
+                                  ),
+                                  Text(
+                                    _filtreChapitres.end >= 1000
+                                        ? l10n.libChaptersPlus
+                                        : '${_filtreChapitres.end.toInt()}',
+                                    style: const TextStyle(fontSize: 12),
+                                  ),
                                 ],
                               ),
                               RangeSlider(
@@ -256,7 +362,9 @@ class _LibraryPage extends ConsumerState<LibraryPage> {
                                 divisions: 100,
                                 labels: RangeLabels(
                                   _filtreChapitres.start.toInt().toString(),
-                                  _filtreChapitres.end >= 1000 ? l10n.libChaptersPlus : _filtreChapitres.end.toInt().toString(),
+                                  _filtreChapitres.end >= 1000
+                                      ? l10n.libChaptersPlus
+                                      : _filtreChapitres.end.toInt().toString(),
                                 ),
                                 onChanged: (v) {
                                   setState(() => _filtreChapitres = v);
@@ -275,7 +383,9 @@ class _LibraryPage extends ConsumerState<LibraryPage> {
           );
         },
       ),
-    ).then((_) { if (mounted) FocusScope.of(context).unfocus(); });
+    ).then((_) {
+      if (mounted) FocusScope.of(context).unfocus();
+    });
   }
 
   @override
@@ -322,7 +432,10 @@ class _LibraryPage extends ConsumerState<LibraryPage> {
             Badge(
               isLabelVisible: _filtresActifs > 0,
               label: Text('$_filtresActifs'),
-              child: IconButton(onPressed: _showFiltres, icon: const Icon(Icons.tune)),
+              child: IconButton(
+                onPressed: _showFiltres,
+                icon: const Icon(Icons.tune),
+              ),
             ),
           ],
         ],
@@ -334,14 +447,21 @@ class _LibraryPage extends ConsumerState<LibraryPage> {
                 padding: const EdgeInsets.fromLTRB(12, 0, 12, 8),
                 child: TextField(
                   controller: _rechercheController,
-                  onChanged: (value) => setState(() => _recherche = value.toLowerCase()),
+                  onChanged: (value) =>
+                      setState(() => _recherche = value.toLowerCase()),
                   decoration: InputDecoration(
                     hintText: l10n.libSearch,
-                    hintStyle: TextStyle(color: Colors.grey.shade400, fontSize: 14),
+                    hintStyle: TextStyle(
+                      color: Colors.grey.shade400,
+                      fontSize: 14,
+                    ),
                     prefixIcon: Icon(Icons.search, color: Colors.grey.shade400),
                     suffixIcon: _recherche.isNotEmpty
                         ? IconButton(
-                            icon: Icon(Icons.clear, color: Colors.grey.shade400),
+                            icon: Icon(
+                              Icons.clear,
+                              color: Colors.grey.shade400,
+                            ),
                             onPressed: () {
                               _rechercheController.clear();
                               setState(() => _recherche = '');
@@ -370,14 +490,24 @@ class _LibraryPage extends ConsumerState<LibraryPage> {
                 Container(
                   color: AppColors.danger.withValues(alpha: 0.1),
                   width: double.infinity,
-                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 16,
+                    vertical: 8,
+                  ),
                   child: Row(
                     children: [
-                      Icon(Icons.check_circle, size: 16, color: AppColors.danger),
+                      Icon(
+                        Icons.check_circle,
+                        size: 16,
+                        color: AppColors.danger,
+                      ),
                       const SizedBox(width: 8),
                       Text(
                         l10n.libSelectedCount(_idsSelectionnes.length),
-                        style: TextStyle(color: AppColors.danger, fontWeight: FontWeight.bold),
+                        style: TextStyle(
+                          color: AppColors.danger,
+                          fontWeight: FontWeight.bold,
+                        ),
                       ),
                     ],
                   ),
@@ -387,101 +517,113 @@ class _LibraryPage extends ConsumerState<LibraryPage> {
         ),
       ),
 
-      floatingActionButton: FloatingActionButton(
-        onPressed: () async {
-          if (_modeSelection) {
-            final nav = Navigator.of(context);
-            final messenger = ScaffoldMessenger.of(context);
-            unawaited(showDialog(
-              context: context,
-              builder: (dialogContext) => AlertDialog(
-                icon: Icon(Icons.warning_amber_rounded, color: AppColors.danger, size: 48),
-                title: Text(l10n.commonWarning, style: TextStyle(color: AppColors.danger)),
-                content: Text(l10n.libDeleteContent, textAlign: TextAlign.center),
-                actions: [
-                  TextButton(
-                    onPressed: () => Navigator.pop(dialogContext),
-                    child: Text(l10n.commonCancel),
-                  ),
-                  TextButton(
-                    style: TextButton.styleFrom(foregroundColor: AppColors.danger),
-                    onPressed: () async {
-                      final dao = ref.read(mangaDaoProvider);
-                      for (final id in _idsSelectionnes) {
-                        final m = await dao.getManga(id);
-                        if (m != null) await CoverService.supprimerCover(m.imagePath);
-                      }
-                      await dao.deleteMangas(_idsSelectionnes.toList());
-                      setState(() {
-                        _idsSelectionnes.clear();
-                        _modeSelection = false;
-                      });
-                      messenger.showSnackBar(
-                        SnackBar(
-                          backgroundColor: AppColors.success,
-                          content: Text(
-                            l10n.libDeleteSuccess,
-                            textAlign: TextAlign.center,
-                            style: const TextStyle(color: Colors.black87),
-                          ),
+      floatingActionButton: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          FloatingActionButton(
+            heroTag: 'fab_random',
+            backgroundColor: AppColors.accent,
+            onPressed: _tirerMangaAuHasard,
+            child: const Icon(Icons.shuffle),
+          ),
+          const SizedBox(height: 12),
+          FloatingActionButton(
+            heroTag: 'fab_principal',
+            onPressed: () async {
+              if (_modeSelection) {
+                final nav = Navigator.of(context);
+                final messenger = ScaffoldMessenger.of(context);
+                unawaited(
+                  showDialog(
+                    context: context,
+                    builder: (dialogContext) => AlertDialog(
+                      icon: Icon(
+                        Icons.warning_amber_rounded,
+                        color: AppColors.danger,
+                        size: 48,
+                      ),
+                      title: Text(
+                        l10n.commonWarning,
+                        style: TextStyle(color: AppColors.danger),
+                      ),
+                      content: Text(
+                        l10n.libDeleteContent,
+                        textAlign: TextAlign.center,
+                      ),
+                      actions: [
+                        TextButton(
+                          onPressed: () => Navigator.pop(dialogContext),
+                          child: Text(l10n.commonCancel),
                         ),
-                      );
-                      nav.pop();
-                    },
-                    child: Text(l10n.commonDelete),
+                        TextButton(
+                          style: TextButton.styleFrom(
+                            foregroundColor: AppColors.danger,
+                          ),
+                          onPressed: () async {
+                            final dao = ref.read(mangaDaoProvider);
+                            for (final id in _idsSelectionnes) {
+                              final m = await dao.getManga(id);
+                              if (m != null) {
+                                await CoverService.supprimerCover(m.imagePath);
+                              }
+                            }
+                            await dao.deleteMangas(_idsSelectionnes.toList());
+                            setState(() {
+                              _idsSelectionnes.clear();
+                              _modeSelection = false;
+                            });
+                            messenger.showSnackBar(
+                              SnackBar(
+                                backgroundColor: AppColors.success,
+                                content: Text(
+                                  l10n.libDeleteSuccess,
+                                  textAlign: TextAlign.center,
+                                  style: const TextStyle(color: Colors.black87),
+                                ),
+                              ),
+                            );
+                            nav.pop();
+                          },
+                          child: Text(l10n.commonDelete),
+                        ),
+                      ],
+                    ),
                   ),
-                ],
-              ),
-            ));
-          } else {
-            unawaited(Navigator.push(context, fadeScaleRoute(AddMangaPage())));
-          }
-        },
-        child: Icon(_modeSelection ? Icons.delete : Icons.add),
+                );
+              } else {
+                unawaited(Navigator.push(context, fadeScaleRoute(AddMangaPage())));
+              }
+            },
+            child: Icon(_modeSelection ? Icons.delete : Icons.add),
+          ),
+        ],
       ),
 
       body: mangas.when(
         loading: () => const Center(child: CircularProgressIndicator()),
         error: (e, st) => Center(child: Text('${l10n.commonWarning} $e')),
         data: (liste) {
-          final listeFiltree = liste.where((m) {
-            if (_recherche.isNotEmpty && !m.titre.toLowerCase().contains(_recherche)) return false;
-            if (_filtreStatus != null && m.status != _filtreStatus) return false;
-            if (_filtreType != null && m.typeManga != _filtreType) return false;
-            if (_filtreFavori != null && m.estFavori != _filtreFavori) return false;
-            if (m.note < _filtreNote.start || m.note > _filtreNote.end) return false;
-            if (m.chapitres < _filtreChapitres.start) return false;
-            if (_filtreChapitres.end < 1000 && m.chapitres > _filtreChapitres.end) return false;
-            return true;
-          }).toList();
-
-          switch (_tri) {
-            case TriOption.titreAZ:
-              listeFiltree.sort((a, b) => a.titre.compareTo(b.titre));
-            case TriOption.titreZA:
-              listeFiltree.sort((a, b) => b.titre.compareTo(a.titre));
-            case TriOption.meilleureNote:
-              listeFiltree.sort((a, b) => b.note.compareTo(a.note));
-            case TriOption.moinsNote:
-              listeFiltree.sort((a, b) => a.note.compareTo(b.note));
-            case TriOption.plusChapitres:
-              listeFiltree.sort((a, b) => b.chapitres.compareTo(a.chapitres));
-            case TriOption.moinsChapitres:
-              listeFiltree.sort((a, b) => a.chapitres.compareTo(b.chapitres));
-            case TriOption.aucun:
-              break;
-          }
-
+          final listeFiltree = _listeFiltreeEtTriee(liste);
           if (liste.isEmpty) {
             return Center(
               child: Column(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                  Icon(Icons.auto_stories_outlined, size: 72, color: Colors.grey.shade400),
+                  Icon(
+                    Icons.auto_stories_outlined,
+                    size: 72,
+                    color: Colors.grey.shade400,
+                  ),
                   const SizedBox(height: 16),
-                  Text(l10n.libEmpty, style: TextStyle(fontSize: 16, color: Colors.grey.shade500)),
+                  Text(
+                    l10n.libEmpty,
+                    style: TextStyle(fontSize: 16, color: Colors.grey.shade500),
+                  ),
                   const SizedBox(height: 8),
-                  Text(l10n.libEmptyHint, style: TextStyle(fontSize: 13, color: Colors.grey.shade400)),
+                  Text(
+                    l10n.libEmptyHint,
+                    style: TextStyle(fontSize: 13, color: Colors.grey.shade400),
+                  ),
                 ],
               ),
             );
@@ -493,11 +635,19 @@ class _LibraryPage extends ConsumerState<LibraryPage> {
               if (listeFiltree.isEmpty)
                 Expanded(
                   child: Center(
-                    child: Text(l10n.libNoResult, style: TextStyle(color: Colors.grey.shade400)),
+                    child: Text(
+                      l10n.libNoResult,
+                      style: TextStyle(color: Colors.grey.shade400),
+                    ),
                   ),
                 )
               else
-                Expanded(child: _buildContenu(listeFiltree, ref.watch(viewModeProvider))),
+                Expanded(
+                  child: _buildContenu(
+                    listeFiltree,
+                    ref.watch(viewModeProvider),
+                  ),
+                ),
             ],
           );
         },
@@ -518,21 +668,24 @@ class _LibraryPage extends ConsumerState<LibraryPage> {
             mainAxisSpacing: 10,
           ),
           itemCount: liste.length,
-          itemBuilder: (context, i) => _wrapItem(liste[i], MangaCard(mangaData: liste[i])),
+          itemBuilder: (context, i) =>
+              _wrapItem(liste[i], MangaCard(mangaData: liste[i])),
         );
       case ViewMode.liste:
         return ListView.separated(
           padding: padding,
           itemCount: liste.length,
           separatorBuilder: (_, _) => const SizedBox(height: 8),
-          itemBuilder: (context, i) => _wrapItem(liste[i], MangaListTile(mangaData: liste[i])),
+          itemBuilder: (context, i) =>
+              _wrapItem(liste[i], MangaListTile(mangaData: liste[i])),
         );
       case ViewMode.compact:
         return ListView.separated(
           padding: padding,
           itemCount: liste.length,
           separatorBuilder: (_, _) => const SizedBox(height: 6),
-          itemBuilder: (context, i) => _wrapItem(liste[i], MangaCompactTile(mangaData: liste[i])),
+          itemBuilder: (context, i) =>
+              _wrapItem(liste[i], MangaCompactTile(mangaData: liste[i])),
         );
     }
   }
@@ -549,7 +702,10 @@ class _LibraryPage extends ConsumerState<LibraryPage> {
       },
       onTap: () {
         if (!_modeSelection) {
-          Navigator.push(context, fadeScaleRoute(MangaDetailPage(mangaData: manga)));
+          Navigator.push(
+            context,
+            fadeScaleRoute(MangaDetailPage(mangaData: manga)),
+          );
         } else {
           setState(() {
             if (isSelected) {
@@ -572,7 +728,11 @@ class _LibraryPage extends ConsumerState<LibraryPage> {
                   borderRadius: BorderRadius.circular(12),
                 ),
                 child: const Center(
-                  child: Icon(Icons.check_circle, color: Colors.white, size: 36),
+                  child: Icon(
+                    Icons.check_circle,
+                    color: Colors.white,
+                    size: 36,
+                  ),
                 ),
               ),
             ),
@@ -632,7 +792,11 @@ class _TriCycleChip extends StatelessWidget {
     final isOption1 = current == option1;
     final isOption2 = current == option2;
     final selected = isOption1 || isOption2;
-    final displayLabel = isOption1 ? '$baseLabel $label1' : isOption2 ? '$baseLabel $label2' : baseLabel;
+    final displayLabel = isOption1
+        ? '$baseLabel $label1'
+        : isOption2
+        ? '$baseLabel $label2'
+        : baseLabel;
 
     return FilterChip(
       label: Text(displayLabel),
