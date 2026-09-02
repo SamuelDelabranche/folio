@@ -336,7 +336,7 @@ class _SettingsPage extends ConsumerState<SettingsPage> {
   }
 
   Future<void> _ouvrirConditions() async {
-    final uri = Uri.parse('https://github.com/SamuelDelabranche/folio/blob/main/TERMS.md');
+    final uri = Uri.parse('https://github.com/SamuelDelabranche/folio/blob/master/TERMS.md');
     if (await canLaunchUrl(uri)) {
       await launchUrl(uri, mode: LaunchMode.externalApplication);
     }

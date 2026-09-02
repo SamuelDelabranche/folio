@@ -1,4 +1,4 @@
-package com.samueldelabranche.folio
+package com.samuelconcept.folio
 
 import io.flutter.embedding.android.FlutterActivity
 

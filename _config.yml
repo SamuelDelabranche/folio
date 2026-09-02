@@ -1,0 +1,24 @@
+theme: jekyll-theme-minimal
+title: Folio
+description: "Politique de confidentialité et conditions d'utilisation"
+show_downloads: false
+
+include:
+  - PRIVACY.md
+  - TERMS.md
+
+exclude:
+  - lib/
+  - android/
+  - ios/
+  - windows/
+  - macos/
+  - web/
+  - linux/
+  - test/
+  - assets/
+  - tool/
+  - pubspec.yaml
+  - pubspec.lock
+  - analysis_options.yaml
+  - l10n.yaml
