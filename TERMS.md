@@ -1,3 +1,8 @@
+---
+layout: default
+title: Terms of Use / Conditions d'utilisation — Folio
+---
+
 # Terms of Use — Folio
 
 *Last updated: July 8, 2026 — [Version française ci-dessous](#conditions-dutilisation--folio)*

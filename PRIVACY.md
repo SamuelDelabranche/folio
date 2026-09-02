@@ -1,3 +1,8 @@
+---
+layout: default
+title: Privacy Policy / Politique de confidentialité — Folio
+---
+
 # Privacy Policy — Folio
 
 *Last updated: July 8, 2026 — Effective for all versions from 2.1.0*
